@@ -1,5 +1,8 @@
 const express = require("express");
 const { initDb } = require("./config/db");
+const authRoutes = require("./routes/auth");
+
+app.use("/api", authRoutes);
 
 const app = express();
 app.use(express.json());
