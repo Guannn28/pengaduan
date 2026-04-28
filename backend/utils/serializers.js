@@ -3,6 +3,7 @@ const normalizeUser = (user) => ({
   name: user.name,
   email: user.email,
   role: user.role,
+  className: user.className || "",
 });
 
 const normalizeComplaint = (complaint) => ({
@@ -20,7 +21,21 @@ const normalizeComplaint = (complaint) => ({
   updatedAt: complaint.updatedAt,
 });
 
+const normalizeAccountRequest = (request) => ({
+  id: request._id.toString(),
+  name: request.name,
+  email: request.email,
+  className: request.className || "",
+  studentCardUrl: request.studentCardUrl || "",
+  studentCardType: request.studentCardType || "",
+  studentCardName: request.studentCardName || "",
+  status: request.status,
+  createdAt: request.createdAt,
+  updatedAt: request.updatedAt,
+});
+
 module.exports = {
   normalizeUser,
   normalizeComplaint,
+  normalizeAccountRequest,
 };

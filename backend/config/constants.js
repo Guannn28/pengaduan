@@ -2,11 +2,11 @@ const complaintCategories = [
   "Sarana dan Prasarana",
   "Akademik",
   "Kasus Pembulian",
-  "Administrasi",
   "Lainnya",
 ];
 
 const complaintStatuses = ["submitted", "in_progress", "resolved", "rejected"];
+const accountRequestStatuses = ["pending", "reviewed"];
 
 const allowedEvidenceMimeTypes = new Set([
   "image/jpeg",
@@ -21,5 +21,6 @@ const allowedEvidenceMimeTypes = new Set([
 module.exports = {
   complaintCategories,
   complaintStatuses,
+  accountRequestStatuses,
   allowedEvidenceMimeTypes,
 };

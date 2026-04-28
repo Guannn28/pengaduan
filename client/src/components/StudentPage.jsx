@@ -1,4 +1,4 @@
-﻿const StudentPage = ({
+const StudentPage = ({
   user,
   form,
   setForm,
@@ -89,7 +89,7 @@
             <div className="user-chip">
               <div>
                 <strong>{user?.name}</strong>
-                <p className="muted small">Mahasiswa</p>
+                <p className="muted small">Siswa{user?.className ? ` • ${user.className}` : ""}</p>
               </div>
               <div className="avatar sm">{initials}</div>
             </div>
@@ -105,7 +105,7 @@
               <p className="muted small">Dashboard Pengaduan</p>
               <h2>Selamat datang di portal pengaduan kampus</h2>
               <p className="muted">
-                Fokus pada laporan sarana prasarana, akademik, kasus pembulian, administrasi, dan lainnya.
+                Fokus pada laporan sarana prasarana, akademik, kasus pembulian, dan lainnya.
               </p>
             </div>
             <div className="quick-row">
@@ -253,7 +253,6 @@
               </form>
             </div>
           </section>
-
         </main>
       </div>
     </div>

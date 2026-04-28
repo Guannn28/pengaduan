@@ -6,9 +6,11 @@ const LoginLayout = ({
   showPassword,
   setShowPassword,
   error,
+  successMessage,
   onSubmit,
 }) => {
   const isRegister = mode === "register";
+
   return (
     <div className="login-page">
       <header className="login-topbar">
@@ -20,7 +22,7 @@ const LoginLayout = ({
       <main className="login-grid">
         <section className="welcome">
           <h1>Selamat Datang</h1>
-          <p className="muted">Sistem Pengaduan Universitas Bandar Lampung</p>
+          <p className="muted">Sistem pengaduan dan permohonan akun Universitas Bandar Lampung</p>
           <img
             className="welcome-illustration"
             src="/online-learning-concept.svg"
@@ -29,14 +31,15 @@ const LoginLayout = ({
         </section>
 
         <section className="login-card">
-          <h2>{isRegister ? "Register" : "Login"}</h2>
+          <h2>{isRegister ? "Permohonan Akun" : "Login"}</h2>
           <p className="muted small">
             {isRegister
-              ? "Masukan nama, email, dan password anda"
-              : "Masukan username dan password anda"}
+              ? "Ajukan akun ke admin dengan nama lengkap, email, kelas, dan foto kartu pelajar."
+              : "Masukkan email dan password akun yang sudah dibuat admin."}
           </p>
 
           {error && <div className="alert">{error}</div>}
+          {successMessage && <div className="alert success-alert">{successMessage}</div>}
 
           <form
             className="login-form"
@@ -59,48 +62,81 @@ const LoginLayout = ({
                 />
               </label>
             )}
+
+            {isRegister && (
+              <label>
+                Nama Kelas
+                <input
+                  type="text"
+                  value={authForm.className}
+                  onChange={(e) =>
+                    setAuthForm({ ...authForm, className: e.target.value })
+                  }
+                  placeholder="Contoh: XII IPA 2"
+                  required
+                />
+              </label>
+            )}
+
             <label>
-              Username
+              Email
               <input
-                type="text"
+                type="email"
                 value={authForm.email}
                 onChange={(e) =>
                   setAuthForm({ ...authForm, email: e.target.value })
                 }
-                placeholder="b2421055"
+                placeholder="nama@email.com"
                 required
               />
             </label>
 
-            <label>
-              Password
-              <input
-                type={showPassword ? "text" : "password"}
-                value={authForm.password}
-                onChange={(e) =>
-                  setAuthForm({ ...authForm, password: e.target.value })
-                }
-                placeholder="•••••••"
-                required
-              />
-            </label>
-
-            <div className="login-extra">
-              <label className="checkbox">
+            {isRegister ? (
+              <label>
+                Foto Kartu Pelajar
                 <input
-                  type="checkbox"
-                  checked={showPassword}
-                  onChange={(e) => setShowPassword(e.target.checked)}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    setAuthForm({
+                      ...authForm,
+                      studentCard: e.target.files?.[0] || null,
+                    })
+                  }
+                  required
                 />
-                Lihat Password
               </label>
-              <a href="#" className="forgot">
-                Lupa Password
-              </a>
-            </div>
+            ) : (
+              <>
+                <label>
+                  Password
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={authForm.password}
+                    onChange={(e) =>
+                      setAuthForm({ ...authForm, password: e.target.value })
+                    }
+                    placeholder="Masukkan password"
+                    required
+                  />
+                </label>
+
+                <div className="login-extra">
+                  <label className="checkbox">
+                    <input
+                      type="checkbox"
+                      checked={showPassword}
+                      onChange={(e) => setShowPassword(e.target.checked)}
+                    />
+                    Lihat Password
+                  </label>
+                  <span className="muted small">Hubungi admin jika lupa password</span>
+                </div>
+              </>
+            )}
 
             <button type="submit" className="primary">
-              {isRegister ? "Daftar" : "Login"}
+              {isRegister ? "Kirim Permohonan" : "Login"}
             </button>
 
             <div className="switch-row">
@@ -123,7 +159,7 @@ const LoginLayout = ({
                     className="ghost-link"
                     onClick={() => onSwitchMode?.("register")}
                   >
-                    Register
+                    Ajukan akun
                   </button>
                 </>
               )}

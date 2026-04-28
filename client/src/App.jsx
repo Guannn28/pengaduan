@@ -9,7 +9,6 @@ const complaintCategories = [
   "Sarana dan Prasarana",
   "Akademik",
   "Kasus Pembulian",
-  "Administrasi",
   "Lainnya",
 ];
 
@@ -40,10 +39,13 @@ const resolveMediaUrl = (value) => {
 
 function App() {
   const [complaints, setComplaints] = useState([]);
+  const [accountRequests, setAccountRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [creatingUser, setCreatingUser] = useState(false);
   const [filter, setFilter] = useState("all");
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [form, setForm] = useState({
     category: complaintCategories[0],
     message: "",
@@ -54,6 +56,16 @@ function App() {
     name: "",
     email: "",
     password: "",
+    className: "",
+    studentCard: null,
+  });
+  const [createUserForm, setCreateUserForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "student",
+    className: "",
+    requestId: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [user, setUser] = useState(null);
@@ -80,6 +92,24 @@ function App() {
     }
   }, [token]);
 
+  const fetchAccountRequests = useCallback(async (tkn = token) => {
+    if (!tkn) {
+      setAccountRequests([]);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/api/account-requests`, {
+        headers: headers(tkn),
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setAccountRequests(data);
+    } catch {
+      setError("Gagal memuat permohonan akun.");
+    }
+  }, [token]);
+
   const fetchMe = useCallback(async (tkn) => {
     try {
       const res = await fetch(`${API_URL}/api/me`, {
@@ -88,14 +118,20 @@ function App() {
       if (!res.ok) throw new Error();
       const data = await res.json();
       setUser(data.user);
-      await fetchComplaints(tkn, data.user);
+      await fetchComplaints(tkn);
+
+      if (data.user?.role === "admin") {
+        await fetchAccountRequests(tkn);
+      } else {
+        setAccountRequests([]);
+      }
     } catch {
       setUser(null);
       setToken("");
       localStorage.removeItem("complain_token");
       setLoading(false);
     }
-  }, [fetchComplaints]);
+  }, [fetchAccountRequests, fetchComplaints]);
 
   useEffect(() => {
     if (token) {
@@ -113,6 +149,7 @@ function App() {
     }
     setSubmitting(true);
     setError("");
+    setSuccessMessage("");
     try {
       const res = await fetch(`${API_URL}/api/complaints`, {
         method: "POST",
@@ -203,30 +240,113 @@ function App() {
 
   const authAction = async (mode) => {
     setError("");
+    setSuccessMessage("");
     const endpoint = mode === "register" ? "register" : "login";
-    const payload =
-      mode === "register"
-        ? authForm
-        : { email: authForm.email, password: authForm.password };
     try {
       const res = await fetch(`${API_URL}/api/${endpoint}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        headers:
+          mode === "register" ? undefined : { "Content-Type": "application/json" },
+        body:
+          mode === "register"
+            ? (() => {
+                const payload = new FormData();
+                payload.append("name", authForm.name);
+                payload.append("email", authForm.email);
+                payload.append("className", authForm.className);
+                if (authForm.studentCard) {
+                  payload.append("studentCard", authForm.studentCard);
+                }
+                return payload;
+              })()
+            : JSON.stringify({
+                email: authForm.email,
+                password: authForm.password,
+              }),
       });
       if (!res.ok) {
         const msg = await res.json().catch(() => ({}));
         throw new Error(msg.error || "Gagal masuk/daftar");
       }
       const data = await res.json();
+
+      if (mode === "register") {
+        setSuccessMessage(
+          data.message || "Permohonan akun berhasil dikirim. Tunggu admin memprosesnya."
+        );
+        setAuthForm({
+          name: "",
+          email: "",
+          password: "",
+          className: "",
+          studentCard: null,
+        });
+        setAuthMode("login");
+        return;
+      }
+
       setToken(data.token);
       localStorage.setItem("complain_token", data.token);
       setUser(data.user);
-      setAuthForm({ name: "", email: "", password: "" });
-      fetchComplaints(data.token, data.user);
+      setAuthForm({
+        name: "",
+        email: "",
+        password: "",
+        className: "",
+        studentCard: null,
+      });
+      fetchComplaints(data.token);
+      if (data.user?.role === "admin") {
+        fetchAccountRequests(data.token);
+      }
     } catch (err) {
       setError(err.message || "Login/daftar gagal.");
     }
+  };
+
+  const handleCreateUser = async () => {
+    setCreatingUser(true);
+    setError("");
+    setSuccessMessage("");
+    try {
+      const res = await fetch(`${API_URL}/api/admin/users`, {
+        method: "POST",
+        headers: headers(token),
+        body: JSON.stringify(createUserForm),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal membuat akun.");
+      }
+
+      setSuccessMessage(data.message || "Akun berhasil dibuat.");
+      setCreateUserForm({
+        name: "",
+        email: "",
+        password: "",
+        role: "student",
+        className: "",
+        requestId: "",
+      });
+      await fetchAccountRequests();
+    } catch (err) {
+      setError(err.message || "Gagal membuat akun.");
+    } finally {
+      setCreatingUser(false);
+    }
+  };
+
+  const handleUseAccountRequest = (request) => {
+    setCreateUserForm({
+      name: request.name || "",
+      email: request.email || "",
+      password: "",
+      role: "student",
+      className: request.className || "",
+      requestId: request.id || "",
+    });
+    setError("");
+    setSuccessMessage("");
   };
 
   const logout = () => {
@@ -234,6 +354,8 @@ function App() {
     setToken("");
     localStorage.removeItem("complain_token");
     setComplaints([]);
+    setAccountRequests([]);
+    setSuccessMessage("");
   };
 
   const filtered = useMemo(() => {
@@ -248,12 +370,14 @@ function App() {
         onSwitchMode={(mode) => {
           setAuthMode(mode);
           setError("");
+          setSuccessMessage("");
         }}
         authForm={authForm}
         setAuthForm={setAuthForm}
         showPassword={showPassword}
         setShowPassword={setShowPassword}
         error={error}
+        successMessage={successMessage}
         onSubmit={() => {
           authAction(authMode);
         }}
@@ -277,6 +401,15 @@ function App() {
         handleStatus={handleStatus}
         handleDelete={handleDelete}
         handleDownloadEvidence={handleDownloadEvidence}
+        accountRequests={accountRequests}
+        fetchAccountRequests={fetchAccountRequests}
+        createUserForm={createUserForm}
+        setCreateUserForm={setCreateUserForm}
+        handleCreateUser={handleCreateUser}
+        creatingUser={creatingUser}
+        handleUseAccountRequest={handleUseAccountRequest}
+        error={error}
+        successMessage={successMessage}
       />
     );
   }

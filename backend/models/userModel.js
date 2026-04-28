@@ -27,6 +27,17 @@ const findUserById = (id) => {
   return usersCollection.findOne({ _id: id });
 };
 
+const findUsers = (query = {}, options = {}) => {
+  const { usersCollection } = getCollections();
+  const cursor = usersCollection.find(query).sort(options.sort || { createdAt: -1 });
+
+  if (options.limit) {
+    cursor.limit(options.limit);
+  }
+
+  return cursor.toArray();
+};
+
 const ensureDefaultAdmin = async () => {
   const desiredEmail = env.ADMIN_EMAIL;
   const desiredPassword = env.ADMIN_PASSWORD;
@@ -63,6 +74,7 @@ const ensureDefaultAdmin = async () => {
 module.exports = {
   findUserByEmail,
   findUserById,
+  findUsers,
   createUser,
   ensureDefaultAdmin,
 };

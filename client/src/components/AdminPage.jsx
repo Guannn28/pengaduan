@@ -77,6 +77,48 @@ const ComplaintRow = ({
   );
 };
 
+const AccountRequestRow = ({ request, resolveMediaUrl, handleUseAccountRequest }) => {
+  const mediaUrl = request.studentCardUrl ? resolveMediaUrl(request.studentCardUrl) : "";
+
+  return (
+    <div className="table-slim account-request-row">
+      <span data-label="Pemohon">
+        <strong>{request.name}</strong>
+        <p className="muted small">{request.email}</p>
+      </span>
+      <span data-label="Kelas">{request.className || "-"}</span>
+      <span data-label="Kartu Pelajar">
+        {!request.studentCardUrl ? (
+          <span className="muted small">Tidak ada</span>
+        ) : request.studentCardType?.startsWith("image/") ? (
+          <img
+            className="evidence-thumb"
+            src={mediaUrl}
+            alt={request.studentCardName || "Kartu pelajar"}
+          />
+        ) : (
+          <a href={mediaUrl} target="_blank" rel="noreferrer" className="ghost-link">
+            Lihat lampiran
+          </a>
+        )}
+      </span>
+      <span data-label="Status">
+        <span className={request.status === "pending" ? "badge warning" : "badge success"}>
+          {request.status === "pending" ? "Menunggu" : "Ditinjau"}
+        </span>
+      </span>
+      <span className="muted small" data-label="Tanggal">
+        {new Date(request.createdAt).toLocaleString("id-ID")}
+      </span>
+      <span className="admin-actions" data-label="Aksi">
+        <button type="button" className="ghost" onClick={() => handleUseAccountRequest(request)}>
+          Pakai Data Ini
+        </button>
+      </span>
+    </div>
+  );
+};
+
 const AdminPage = ({
   user,
   logout,
@@ -91,6 +133,15 @@ const AdminPage = ({
   handleStatus,
   handleDelete,
   handleDownloadEvidence,
+  accountRequests,
+  fetchAccountRequests,
+  createUserForm,
+  setCreateUserForm,
+  handleCreateUser,
+  creatingUser,
+  handleUseAccountRequest,
+  error,
+  successMessage,
 }) => (
   <div className="student-shell">
     <div className="student-main">
@@ -119,15 +170,19 @@ const AdminPage = ({
         <section className="welcome-card">
           <div>
             <p className="muted small">Dashboard Admin</p>
-            <h2>Kelola semua pengaduan mahasiswa</h2>
+            <h2>Kelola pengaduan dan pembuatan akun</h2>
             <p className="muted">
-              Termasuk laporan sarana prasarana, akademik, administrasi, dan kasus pembulian.
+              Tinjau permohonan akun, buat akun siswa atau admin, lalu kelola pengaduan yang masuk.
             </p>
           </div>
           <div className="quick-row">
             <div className="quick-card">
-              <p className="label">Total Data</p>
+              <p className="label">Total Pengaduan</p>
               <strong>{filtered.length}</strong>
+            </div>
+            <div className="quick-card">
+              <p className="label">Permohonan Akun</p>
+              <strong>{accountRequests.filter((item) => item.status === "pending").length}</strong>
             </div>
             <div className="quick-card">
               <p className="label">Kasus Pembulian</p>
@@ -135,6 +190,134 @@ const AdminPage = ({
                 {filtered.filter((item) => item.category === "Kasus Pembulian").length}
               </strong>
             </div>
+          </div>
+        </section>
+
+        <section className="student-grid admin-grid">
+          <div className="card schedule-card">
+            <div className="card-head">
+              <div>
+                <h3>Permohonan Akun</h3>
+                <p className="muted small">
+                  Data ini dikirim dari halaman registrasi dan bisa dipakai untuk mengisi form akun.
+                </p>
+              </div>
+              <button className="ghost" type="button" onClick={() => fetchAccountRequests()}>
+                Muat ulang permohonan
+              </button>
+            </div>
+
+            {accountRequests.length === 0 ? (
+              <div className="empty">Belum ada permohonan akun.</div>
+            ) : (
+              <div className="table-card admin-table">
+                <div className="table-slim head account-request-row">
+                  <span>Pemohon</span>
+                  <span>Kelas</span>
+                  <span>Kartu Pelajar</span>
+                  <span>Status</span>
+                  <span>Tanggal</span>
+                  <span>Aksi</span>
+                </div>
+                {accountRequests.map((request) => (
+                  <AccountRequestRow
+                    key={request.id}
+                    request={request}
+                    resolveMediaUrl={resolveMediaUrl}
+                    handleUseAccountRequest={handleUseAccountRequest}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="card submit-card">
+            <h3>Buat Akun Baru</h3>
+            <p className="muted small">
+              Admin dapat membuat akun dengan role siswa atau admin.
+            </p>
+            {error && <div className="alert">{error}</div>}
+            {successMessage && <div className="alert success-alert">{successMessage}</div>}
+            <form
+              className="form stacked"
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleCreateUser();
+              }}
+            >
+              <label>
+                Nama Lengkap
+                <input
+                  type="text"
+                  value={createUserForm.name}
+                  onChange={(event) =>
+                    setCreateUserForm({ ...createUserForm, name: event.target.value })
+                  }
+                  required
+                />
+              </label>
+              <label>
+                Email
+                <input
+                  type="email"
+                  value={createUserForm.email}
+                  onChange={(event) =>
+                    setCreateUserForm({ ...createUserForm, email: event.target.value })
+                  }
+                  required
+                />
+              </label>
+              <label>
+                Password
+                <input
+                  type="text"
+                  value={createUserForm.password}
+                  onChange={(event) =>
+                    setCreateUserForm({ ...createUserForm, password: event.target.value })
+                  }
+                  required
+                />
+              </label>
+              <label>
+                Role
+                <select
+                  value={createUserForm.role}
+                  onChange={(event) =>
+                    setCreateUserForm({ ...createUserForm, role: event.target.value })
+                  }
+                >
+                  <option value="student">Siswa</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </label>
+              {createUserForm.role === "student" && (
+                <label>
+                  Nama Kelas
+                  <input
+                    type="text"
+                    value={createUserForm.className}
+                    onChange={(event) =>
+                      setCreateUserForm({ ...createUserForm, className: event.target.value })
+                    }
+                    required
+                  />
+                </label>
+              )}
+              <div className="form-actions">
+                <button
+                  type="submit"
+                  disabled={
+                    creatingUser ||
+                    !createUserForm.name.trim() ||
+                    !createUserForm.email.trim() ||
+                    !createUserForm.password.trim() ||
+                    (createUserForm.role === "student" && !createUserForm.className.trim())
+                  }
+                >
+                  {creatingUser ? "Membuat..." : "Buat Akun"}
+                </button>
+              </div>
+            </form>
           </div>
         </section>
 

@@ -5,6 +5,7 @@ let db;
 let usersCollection;
 let tokensCollection;
 let complaintsCollection;
+let accountRequestsCollection;
 
 const getCollections = () => {
   if (!db) {
@@ -16,6 +17,7 @@ const getCollections = () => {
     usersCollection,
     tokensCollection,
     complaintsCollection,
+    accountRequestsCollection,
   };
 };
 
@@ -28,6 +30,7 @@ async function initDb() {
   usersCollection = db.collection("users");
   tokensCollection = db.collection("tokens");
   complaintsCollection = db.collection("complaints");
+  accountRequestsCollection = db.collection("accountRequests");
 
   await Promise.all([
     usersCollection.createIndex({ email: 1 }, { unique: true }),
@@ -37,6 +40,8 @@ async function initDb() {
     complaintsCollection.createIndex({ userId: 1, createdAt: -1 }),
     complaintsCollection.createIndex({ createdAt: -1 }),
     complaintsCollection.createIndex({ status: 1 }),
+    accountRequestsCollection.createIndex({ email: 1, status: 1 }),
+    accountRequestsCollection.createIndex({ createdAt: -1 }),
   ]);
 
   await ensureDefaultAdmin();
