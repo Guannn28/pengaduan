@@ -4,7 +4,7 @@ import StudentPage from "./components/StudentPage";
 import AdminPage from "./components/AdminPage";
 import "./App.css";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const API_URL = import.meta.env.VITE_API_URL || "https://backendpengaduan-production.up.railway.app";
 const complaintCategories = [
   "Sarana dan Prasarana",
   "Akademik",
