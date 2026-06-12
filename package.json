@@ -4,8 +4,9 @@
   "main": "backend/server.js",
   "scripts": {
     "dev": "concurrently \"npm run server:dev\" \"npm run client\"",
+    "dev:full": "concurrently \"npm run server:dev\" \"npm run client\"",
     "server": "node backend/server.js",
-    "server:dev": "nodemon backend/server.js",
+    "server:dev": "node backend/server.js",
     "client": "npm --prefix client run dev",
     "client:build": "npm --prefix client run build",
     "client:preview": "npm --prefix client run preview",

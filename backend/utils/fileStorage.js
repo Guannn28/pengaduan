@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { uploadsPath } = require("../config/paths");
+const { uploadsPath } = require("../paths");
 
 const removeLocalEvidence = (evidenceUrl) => {
   if (!evidenceUrl || !evidenceUrl.startsWith("/uploads/")) return;

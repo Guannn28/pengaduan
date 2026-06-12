@@ -15,27 +15,28 @@ const LoginLayout = ({
     <div className="login-page">
       <header className="login-topbar">
         <div className="login-brand">
-          <img src="/ubl-logo.png" alt="UBL Logo" />
+          <img src="/logo-sma.jpg" alt="SMA Logo" />
+          <div className="brand-text">
+              <p className="muted small">SMA Negeri 1</p>
+              <strong className="title">Bangunrejo</strong>
+            </div>
         </div>
       </header>
 
       <main className="login-grid">
         <section className="welcome">
-          <h1>Selamat Datang</h1>
-          <p className="muted">Sistem pengaduan dan permohonan akun Universitas Bandar Lampung</p>
-          <img
-            className="welcome-illustration"
-            src="/online-learning-concept.svg"
-            alt="Mahasiswa belajar"
-          />
+          <h1>Sistem Pengaduan Sekolah</h1>
+          <p className="muted">
+            Laporkan dan pantau pengaduan secara aman, tertib, dan terarah.
+          </p>
         </section>
 
         <section className="login-card">
           <h2>{isRegister ? "Permohonan Akun" : "Login"}</h2>
           <p className="muted small">
             {isRegister
-              ? "Ajukan akun ke admin dengan nama lengkap, email, kelas, dan foto kartu pelajar."
-              : "Masukkan email dan password akun yang sudah dibuat admin."}
+              ? "Isi data sesuai kartu pelajar agar admin bisa memverifikasi."
+              : "Masuk untuk mengirim dan memantau pengaduan."}
           </p>
 
           {error && <div className="alert">{error}</div>}
@@ -78,15 +79,30 @@ const LoginLayout = ({
               </label>
             )}
 
+            {isRegister && (
+              <label>
+                Nomor yang Bisa Dihubungi
+                <input
+                  type="text"
+                  value={authForm.contactPhone}
+                  onChange={(e) =>
+                    setAuthForm({ ...authForm, contactPhone: e.target.value })
+                  }
+                  placeholder="Contoh: 081234567890"
+                  required
+                />
+              </label>
+            )}
+
             <label>
-              Email
+              Username
               <input
-                type="email"
-                value={authForm.email}
+                type="text"
+                value={authForm.username}
                 onChange={(e) =>
-                  setAuthForm({ ...authForm, email: e.target.value })
+                  setAuthForm({ ...authForm, username: e.target.value })
                 }
-                placeholder="nama@email.com"
+                placeholder="contoh: budi12"
                 required
               />
             </label>
@@ -165,6 +181,23 @@ const LoginLayout = ({
               )}
             </div>
           </form>
+
+          <div className="login-benefits" aria-label="Keunggulan sistem">
+            <div className="benefit-list">
+              <div className="benefit-item">
+                <strong>Aman</strong>
+                <span>laporan dapat dibuat anonim</span>
+              </div>
+              <div className="benefit-item">
+                <strong>Terarah</strong>
+                <span>laporan dikategorikan otomatis</span>
+              </div>
+              <div className="benefit-item">
+                <strong>Tindak lanjut</strong>
+                <span>admin/BK dapat memproses laporan</span>
+              </div>
+            </div>
+          </div>
         </section>
       </main>
     </div>

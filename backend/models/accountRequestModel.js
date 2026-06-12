@@ -1,4 +1,4 @@
-const { getCollections } = require("../../backend_fix/config/db");
+const { getCollections } = require("../config/db");
 
 const createAccountRequest = (payload) => {
   const { accountRequestsCollection } = getCollections();
@@ -16,10 +16,11 @@ const findAccountRequests = (query = {}, options = {}) => {
   return cursor.toArray();
 };
 
-const findPendingAccountRequestByEmail = (email) => {
+const findPendingAccountRequestByUsername = (username) => {
   const { accountRequestsCollection } = getCollections();
+  const normalized = String(username || "").trim().toLowerCase();
   return accountRequestsCollection.findOne({
-    email: String(email).trim().toLowerCase(),
+    $or: [{ username: normalized }, { email: normalized }],
     status: "pending",
   });
 };
@@ -29,9 +30,21 @@ const updateAccountRequestById = (objectId, payload) => {
   return accountRequestsCollection.updateOne({ _id: objectId }, payload);
 };
 
+const findAccountRequestById = (objectId) => {
+  const { accountRequestsCollection } = getCollections();
+  return accountRequestsCollection.findOne({ _id: objectId });
+};
+
+const deleteAccountRequestById = (objectId) => {
+  const { accountRequestsCollection } = getCollections();
+  return accountRequestsCollection.deleteOne({ _id: objectId });
+};
+
 module.exports = {
   createAccountRequest,
   findAccountRequests,
-  findPendingAccountRequestByEmail,
+  findPendingAccountRequestByUsername,
+  findAccountRequestById,
+  deleteAccountRequestById,
   updateAccountRequestById,
 };

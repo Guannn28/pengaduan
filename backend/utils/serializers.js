@@ -1,31 +1,57 @@
 const normalizeUser = (user) => ({
   id: user._id.toString(),
   name: user.name,
-  email: user.email,
+  username: user.username || user.email || "",
   role: user.role,
   className: user.className || "",
 });
 
-const normalizeComplaint = (complaint) => ({
-  id: complaint._id.toString(),
-  userId: complaint.userId ? complaint.userId.toString() : null,
-  name: complaint.name,
-  email: complaint.email,
-  category: complaint.category,
-  message: complaint.message,
-  evidenceUrl: complaint.evidenceUrl || "",
-  evidenceType: complaint.evidenceType || "",
-  evidenceName: complaint.evidenceName || "",
-  status: complaint.status,
-  createdAt: complaint.createdAt,
-  updatedAt: complaint.updatedAt,
+const normalizeStudentAccount = (user) => ({
+  id: user._id.toString(),
+  name: user.name,
+  username: user.username || user.email || "",
+  className: user.className || "",
+  role: user.role,
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt,
 });
+
+const normalizeComplaint = (complaint, options = {}) => {
+  const isAdminViewer = options.viewerRole === "admin";
+  const isAnonymous = Boolean(complaint.isAnonymous);
+  const hideReporter = isAdminViewer && isAnonymous;
+
+  return {
+    id: complaint._id.toString(),
+    userId: hideReporter ? null : complaint.userId ? complaint.userId.toString() : null,
+    name: hideReporter ? "Anonim" : complaint.name,
+    username: hideReporter ? "" : complaint.username || complaint.email || "",
+    isAnonymous,
+    category: complaint.category,
+    message: complaint.message,
+    evidenceUrl: complaint.evidenceUrl || "",
+    evidenceType: complaint.evidenceType || "",
+    evidenceName: complaint.evidenceName || "",
+    urgency: complaint.urgency || "",
+    location: complaint.location || "",
+    incidentTime: complaint.incidentTime || "",
+    involvedPeople: complaint.involvedPeople || "",
+    witnesses: complaint.witnesses || "",
+    expectation: complaint.expectation || "",
+    chatbotData: complaint.chatbotData || null,
+    source: complaint.source || "",
+    status: complaint.status,
+    createdAt: complaint.createdAt,
+    updatedAt: complaint.updatedAt,
+  };
+};
 
 const normalizeAccountRequest = (request) => ({
   id: request._id.toString(),
   name: request.name,
-  email: request.email,
+  username: request.username || request.email || "",
   className: request.className || "",
+  contactPhone: request.contactPhone || "",
   studentCardUrl: request.studentCardUrl || "",
   studentCardType: request.studentCardType || "",
   studentCardName: request.studentCardName || "",
@@ -36,6 +62,7 @@ const normalizeAccountRequest = (request) => ({
 
 module.exports = {
   normalizeUser,
+  normalizeStudentAccount,
   normalizeComplaint,
   normalizeAccountRequest,
 };

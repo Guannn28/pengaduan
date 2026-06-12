@@ -2,6 +2,8 @@ const complaintCategories = [
   "Sarana dan Prasarana",
   "Akademik",
   "Kasus Pembulian",
+  "Pelecehan",
+  "Kekerasan",
   "Lainnya",
 ];
 

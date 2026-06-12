@@ -1,10 +1,15 @@
-const env = require("../../backend_fix/config/env");
-const { getCollections } = require("../../backend_fix/config/db");
+const env = require("../config/env");
+const { getCollections } = require("../config/db");
 const { generateSalt, hashPassword } = require("../utils/security");
 
-const findUserByEmail = (email) => {
+const normalizeUsername = (username) => String(username || "").trim().toLowerCase();
+
+const findUserByUsername = (username) => {
   const { usersCollection } = getCollections();
-  return usersCollection.findOne({ email: String(email).trim().toLowerCase() });
+  const normalized = normalizeUsername(username);
+  return usersCollection.findOne({
+    $or: [{ username: normalized }, { email: normalized }],
+  });
 };
 
 const findAdmin = () => {
@@ -20,6 +25,11 @@ const createUser = (payload) => {
 const updateUserById = (id, payload) => {
   const { usersCollection } = getCollections();
   return usersCollection.updateOne({ _id: id }, payload);
+};
+
+const deleteUserById = (id) => {
+  const { usersCollection } = getCollections();
+  return usersCollection.deleteOne({ _id: id });
 };
 
 const findUserById = (id) => {
@@ -39,7 +49,7 @@ const findUsers = (query = {}, options = {}) => {
 };
 
 const ensureDefaultAdmin = async () => {
-  const desiredEmail = env.ADMIN_EMAIL;
+  const desiredUsername = env.ADMIN_USERNAME;
   const desiredPassword = env.ADMIN_PASSWORD;
   const now = new Date();
   const salt = generateSalt();
@@ -48,33 +58,35 @@ const ensureDefaultAdmin = async () => {
 
   if (!existingAdmin) {
     await createUser({
-      name: "Admin Kampus",
-      email: desiredEmail,
+      name: "Admin Sekolah",
+      username: desiredUsername,
       passwordHash: hash,
       salt,
       role: "admin",
       createdAt: now,
       updatedAt: now,
     });
-    console.log(`Admin default dibuat email: ${desiredEmail} password: ${desiredPassword}`);
+    console.log(`Admin default dibuat username: ${desiredUsername} password: ${desiredPassword}`);
     return;
   }
 
   await updateUserById(existingAdmin._id, {
     $set: {
-      email: desiredEmail,
+      name: "Admin Sekolah",
+      username: desiredUsername,
       passwordHash: hash,
       salt,
       updatedAt: now,
     },
   });
-  console.log(`Admin diperbarui ke email: ${desiredEmail} password: ${desiredPassword}`);
+  console.log(`Admin diperbarui ke username: ${desiredUsername} password: ${desiredPassword}`);
 };
 
 module.exports = {
-  findUserByEmail,
+  findUserByUsername,
   findUserById,
   findUsers,
   createUser,
+  deleteUserById,
   ensureDefaultAdmin,
 };

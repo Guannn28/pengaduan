@@ -1,11 +1,21 @@
 :root {
-  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --bg-page: #f4f7fb;
+  --surface: #ffffff;
+  --text: #102331;
+  --text-secondary: #5b6b78;
+  --accent: #195554;
+  --accent-2: #f2c36b;
+  --border: #d9e2ea;
+  --shadow-soft: 0 18px 50px rgba(16, 35, 49, 0.08);
+
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #0f172a;
-  background-color: #f6f8fb;
+  color: var(--text);
+  background-color: var(--bg-page);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 * {
@@ -13,24 +23,41 @@
 }
 
 html,
-body {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-body {
-  margin: 0;
-  overflow-y: scroll;
-}
-
+body,
 #root {
   width: 100%;
-  max-width: 100%;
   min-height: 100vh;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100%;
   overflow-x: hidden;
+}
+
+body {
+  overflow-y: scroll;
 }
 
 a {
   color: inherit;
+}
+
+::selection {
+  background: #195554;
+  color: #ffffff;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #eef3f6;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #b8c7d0;
 }

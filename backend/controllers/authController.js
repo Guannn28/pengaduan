@@ -1,18 +1,23 @@
 const {
   createUser,
-  findUserByEmail,
+  deleteUserById,
+  findUserById,
+  findUserByUsername,
   findUsers,
 } = require("../models/userModel");
 const {
   createAccountRequest,
+  deleteAccountRequestById,
   findAccountRequests,
-  findPendingAccountRequestByEmail,
+  findAccountRequestById,
+  findPendingAccountRequestByUsername,
   updateAccountRequestById,
 } = require("../models/accountRequestModel");
 const { upsertTokenSession } = require("../models/tokenModel");
 const { generateSalt, generateToken, hashPassword } = require("../utils/security");
 const {
   normalizeAccountRequest,
+  normalizeStudentAccount,
   normalizeUser,
 } = require("../utils/serializers");
 const { parseObjectId } = require("../utils/objectId");
@@ -27,31 +32,32 @@ const createSession = async (userId) => {
 
 const register = async (req, res) => {
   try {
-    const { name, email, className } = req.body || {};
-    if (!name || !email || !className) {
-      return res.status(400).json({ error: "Nama, email, dan kelas wajib diisi." });
+    const { name, username, className, contactPhone } = req.body || {};
+    if (!name || !username || !className || !contactPhone) {
+      return res.status(400).json({ error: "Nama, username, kelas, dan nomor yang bisa dihubungi wajib diisi." });
     }
 
     if (!req.file) {
       return res.status(400).json({ error: "Foto kartu pelajar wajib diunggah." });
     }
 
-    const normalizedEmail = String(email).trim().toLowerCase();
-    const existing = await findUserByEmail(normalizedEmail);
+    const normalizedUsername = String(username).trim().toLowerCase();
+    const existing = await findUserByUsername(normalizedUsername);
     if (existing) {
-      return res.status(409).json({ error: "Email sudah memiliki akun. Silakan login." });
+      return res.status(409).json({ error: "Username sudah memiliki akun. Silakan login." });
     }
 
-    const pendingRequest = await findPendingAccountRequestByEmail(normalizedEmail);
+    const pendingRequest = await findPendingAccountRequestByUsername(normalizedUsername);
     if (pendingRequest) {
-      return res.status(409).json({ error: "Permohonan akun untuk email ini masih menunggu admin." });
+      return res.status(409).json({ error: "Permohonan akun untuk username ini masih menunggu admin." });
     }
 
     const now = new Date();
     const payload = {
       name: String(name).trim(),
-      email: normalizedEmail,
+      username: normalizedUsername,
       className: String(className).trim(),
+      contactPhone: String(contactPhone).trim(),
       studentCardUrl: `/uploads/account-requests/${req.file.filename}`,
       studentCardType: req.file.mimetype,
       studentCardName: req.file.originalname,
@@ -76,16 +82,16 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body || {};
-    const normalizedEmail = String(email || "").toLowerCase();
-    const user = await findUserByEmail(normalizedEmail);
+    const { username, password } = req.body || {};
+    const normalizedUsername = String(username || "").trim().toLowerCase();
+    const user = await findUserByUsername(normalizedUsername);
     if (!user) {
-      return res.status(401).json({ error: "Email atau password salah." });
+      return res.status(401).json({ error: "Username atau password salah." });
     }
 
     const hash = hashPassword(password || "", user.salt);
     if (hash !== user.passwordHash) {
-      return res.status(401).json({ error: "Email atau password salah." });
+      return res.status(401).json({ error: "Username atau password salah." });
     }
 
     const { token, expiresAt } = await createSession(user._id);
@@ -112,16 +118,26 @@ const listAccountRequests = async (_req, res) => {
   }
 };
 
+const listStudentAccounts = async (_req, res) => {
+  try {
+    const rows = await findUsers({ role: "student" }, { sort: { createdAt: -1 } });
+    return res.json(rows.map(normalizeStudentAccount));
+  } catch (err) {
+    console.error("List student accounts error", err);
+    return res.status(500).json({ error: "Gagal mengambil data akun siswa." });
+  }
+};
+
 const createUserByAdmin = async (req, res) => {
   try {
-    const { name, email, password, role, className, requestId } = req.body || {};
+    const { name, username, password, role, className, requestId } = req.body || {};
     const normalizedName = String(name || "").trim();
-    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const normalizedUsername = String(username || "").trim().toLowerCase();
     const normalizedRole = String(role || "").trim().toLowerCase();
     const normalizedClassName = String(className || "").trim();
 
-    if (!normalizedName || !normalizedEmail || !password || !normalizedRole) {
-      return res.status(400).json({ error: "Nama, email, password, dan role wajib diisi." });
+    if (!normalizedName || !normalizedUsername || !password || !normalizedRole) {
+      return res.status(400).json({ error: "Nama, username, password, dan role wajib diisi." });
     }
 
     if (!["student", "admin"].includes(normalizedRole)) {
@@ -132,9 +148,9 @@ const createUserByAdmin = async (req, res) => {
       return res.status(400).json({ error: "Kelas wajib diisi untuk akun siswa." });
     }
 
-    const existing = await findUserByEmail(normalizedEmail);
+    const existing = await findUserByUsername(normalizedUsername);
     if (existing) {
-      return res.status(409).json({ error: "Email sudah terdaftar." });
+      return res.status(409).json({ error: "Username sudah terdaftar." });
     }
 
     const now = new Date();
@@ -142,7 +158,7 @@ const createUserByAdmin = async (req, res) => {
     const passwordHash = hashPassword(password, salt);
     const result = await createUser({
       name: normalizedName,
-      email: normalizedEmail,
+      username: normalizedUsername,
       passwordHash,
       salt,
       role: normalizedRole,
@@ -176,10 +192,57 @@ const createUserByAdmin = async (req, res) => {
   }
 };
 
+const deleteStudentAccount = async (req, res) => {
+  try {
+    const objectId = parseObjectId(req.params.id);
+    const existing = objectId ? await findUserById(objectId) : null;
+
+    if (!existing) {
+      return res.status(404).json({ error: "Akun siswa tidak ditemukan." });
+    }
+
+    if (existing.role !== "student") {
+      return res.status(400).json({ error: "Akun admin tidak boleh dihapus dari menu ini." });
+    }
+
+    await deleteUserById(objectId);
+    return res.json({ success: true, message: "Akun siswa berhasil dihapus." });
+  } catch (err) {
+    console.error("Delete student account error", err);
+    return res.status(500).json({ error: "Gagal menghapus akun siswa." });
+  }
+};
+
+const deleteAccountRequest = async (req, res) => {
+  try {
+    const objectId = parseObjectId(req.params.id);
+    const existing = objectId ? await findAccountRequestById(objectId) : null;
+
+    if (!existing) {
+      return res.status(404).json({ error: "Permohonan akun tidak ditemukan." });
+    }
+
+    if (existing.status !== "reviewed") {
+      return res
+        .status(400)
+        .json({ error: "Permohonan akun hanya bisa dihapus setelah akun selesai dibuat." });
+    }
+
+    await deleteAccountRequestById(objectId);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("Delete account request error", err);
+    return res.status(500).json({ error: "Gagal menghapus permohonan akun." });
+  }
+};
+
 module.exports = {
   register,
   login,
   me,
   listAccountRequests,
+  listStudentAccounts,
   createUserByAdmin,
+  deleteStudentAccount,
+  deleteAccountRequest,
 };

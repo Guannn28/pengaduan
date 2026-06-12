@@ -1,4 +1,4 @@
-const { getCollections } = require("../../backend_fix/config/db");
+const { getCollections } = require("../config/db");
 
 const findComplaints = (query, options = {}) => {
   const { complaintsCollection } = getCollections();

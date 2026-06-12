@@ -1,129 +1,26 @@
-const ComplaintRow = ({
-  complaint,
-  resolveMediaUrl,
-  statusOptions,
-  statusColor,
-  handleStatus,
-  handleDelete,
-  handleDownloadEvidence,
-}) => {
-  const mediaUrl = complaint.evidenceUrl ? resolveMediaUrl(complaint.evidenceUrl) : "";
-
-  return (
-    <div className="table-slim">
-      <span data-label="Pelapor">
-        <strong>{complaint.name}</strong>
-        <p className="muted small">{complaint.email}</p>
-      </span>
-      <span data-label="Kategori">{complaint.category}</span>
-      <span className="message" data-label="Pesan">{complaint.message}</span>
-      <span data-label="Bukti">
-        {!complaint.evidenceUrl ? (
-          <span className="muted small">Tidak ada</span>
-        ) : (
-          <div className="evidence-actions">
-            {complaint.evidenceType?.startsWith("image/") ? (
-              <img
-                className="evidence-thumb"
-                src={mediaUrl}
-                alt={complaint.evidenceName || "Bukti"}
-              />
-            ) : complaint.evidenceType?.startsWith("video/") ? (
-              <video className="evidence-thumb" src={mediaUrl} controls preload="metadata" />
-            ) : (
-              <a href={mediaUrl} target="_blank" rel="noreferrer" className="ghost-link">
-                Lihat bukti
-              </a>
-            )}
-            <button
-              className="ghost small-btn"
-              type="button"
-              onClick={() => handleDownloadEvidence(complaint)}
-            >
-              Download
-            </button>
-          </div>
-        )}
-      </span>
-      <span data-label="Status">
-        <span className={statusColor[complaint.status] || "badge"}>
-          {statusOptions.find((option) => option.value === complaint.status)?.label ??
-            complaint.status}
-        </span>
-      </span>
-      <span className="muted small" data-label="Tanggal">
-        {new Date(complaint.createdAt).toLocaleString("id-ID")}
-      </span>
-      <span className="admin-actions" data-label="Aksi">
-        <select
-          value={complaint.status}
-          onChange={(event) => handleStatus(complaint.id, event.target.value)}
-        >
-          {statusOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <button
-          className="ghost danger-text"
-          type="button"
-          onClick={() => handleDelete(complaint.id)}
-        >
-          Hapus
-        </button>
-      </span>
-    </div>
-  );
-};
-
-const AccountRequestRow = ({ request, resolveMediaUrl, handleUseAccountRequest }) => {
-  const mediaUrl = request.studentCardUrl ? resolveMediaUrl(request.studentCardUrl) : "";
-
-  return (
-    <div className="table-slim account-request-row">
-      <span data-label="Pemohon">
-        <strong>{request.name}</strong>
-        <p className="muted small">{request.email}</p>
-      </span>
-      <span data-label="Kelas">{request.className || "-"}</span>
-      <span data-label="Kartu Pelajar">
-        {!request.studentCardUrl ? (
-          <span className="muted small">Tidak ada</span>
-        ) : request.studentCardType?.startsWith("image/") ? (
-          <img
-            className="evidence-thumb"
-            src={mediaUrl}
-            alt={request.studentCardName || "Kartu pelajar"}
-          />
-        ) : (
-          <a href={mediaUrl} target="_blank" rel="noreferrer" className="ghost-link">
-            Lihat lampiran
-          </a>
-        )}
-      </span>
-      <span data-label="Status">
-        <span className={request.status === "pending" ? "badge warning" : "badge success"}>
-          {request.status === "pending" ? "Menunggu" : "Ditinjau"}
-        </span>
-      </span>
-      <span className="muted small" data-label="Tanggal">
-        {new Date(request.createdAt).toLocaleString("id-ID")}
-      </span>
-      <span className="admin-actions" data-label="Aksi">
-        <button type="button" className="ghost" onClick={() => handleUseAccountRequest(request)}>
-          Pakai Data Ini
-        </button>
-      </span>
-    </div>
-  );
-};
+import { useMemo, useState } from "react";
+import AccountRequestsSection from "./admin/AccountRequestsSection";
+import AdminDashboard from "./admin/AdminDashboard";
+import AdminSidebar from "./admin/AdminSidebar";
+import ComplaintsSection from "./admin/ComplaintsSection";
+import ComplaintDetailModal from "./admin/ComplaintDetailModal";
+import DatasetInsightSection from "./admin/DatasetInsightSection";
+import StudentAccountsSection from "./admin/StudentAccountsSection";
+import {
+  adminNavItems,
+  complaintDetailLabels,
+  normalizeDatasetItems,
+  splitComplaintMessage,
+} from "./admin/adminUtils";
 
 const AdminPage = ({
   user,
   logout,
+  adminView,
+  setAdminView,
   loading,
-  filtered,
+  complaints = [],
+  filtered = [],
   filter,
   setFilter,
   resolveMediaUrl,
@@ -133,251 +30,252 @@ const AdminPage = ({
   handleStatus,
   handleDelete,
   handleDownloadEvidence,
-  accountRequests,
+  accountRequests = [],
   fetchAccountRequests,
+  studentAccounts = [],
+  studentAccountsLoading,
+  fetchStudentAccounts,
+  handleDeleteStudentAccount,
+  datasetInsight,
+  datasetInsightLoading,
+  datasetInsightError,
   createUserForm,
   setCreateUserForm,
   handleCreateUser,
   creatingUser,
   handleUseAccountRequest,
+  handleDeleteAccountRequest,
   error,
   successMessage,
-}) => (
-  <div className="student-shell">
-    <div className="student-main">
-      <header className="student-header">
-        <div className="brand-inline">
-          <img className="brand-logo" src="/ubl-logo.png" alt="UBL Logo" />
-          <div className="brand-text">
-            <p className="muted small">Universitas</p>
-            <strong className="title">Bandar Lampung</strong>
-          </div>
-        </div>
-        <div className="header-actions">
-          <div className="user-chip">
-            <div>
-              <strong>{user?.name}</strong>
-              <p className="muted small">Admin</p>
-            </div>
-          </div>
-          <button className="ghost" type="button" onClick={logout}>
-            Keluar
-          </button>
-        </div>
-      </header>
+}) => {
+  const [selectedComplaint, setSelectedComplaint] = useState(null);
+  const [showDatasetInsightDetail, setShowDatasetInsightDetail] = useState(false);
 
-      <main className="student-content">
-        <section className="welcome-card">
-          <div>
-            <p className="muted small">Dashboard Admin</p>
-            <h2>Kelola pengaduan dan pembuatan akun</h2>
-            <p className="muted">
-              Tinjau permohonan akun, buat akun siswa atau admin, lalu kelola pengaduan yang masuk.
-            </p>
-          </div>
-          <div className="quick-row">
-            <div className="quick-card">
-              <p className="label">Total Pengaduan</p>
-              <strong>{filtered.length}</strong>
-            </div>
-            <div className="quick-card">
-              <p className="label">Permohonan Akun</p>
-              <strong>{accountRequests.filter((item) => item.status === "pending").length}</strong>
-            </div>
-            <div className="quick-card">
-              <p className="label">Kasus Pembulian</p>
-              <strong>
-                {filtered.filter((item) => item.category === "Kasus Pembulian").length}
-              </strong>
-            </div>
-          </div>
-        </section>
+  const pendingAccountRequests = accountRequests.filter((item) => item.status === "pending");
 
-        <section className="student-grid admin-grid">
-          <div className="card schedule-card">
-            <div className="card-head">
+  const complaintStats = useMemo(() => {
+    const byStatus = complaints.reduce(
+      (acc, complaint) => {
+        acc[complaint.status] = (acc[complaint.status] || 0) + 1;
+        return acc;
+      },
+      { submitted: 0, in_progress: 0, resolved: 0, rejected: 0 }
+    );
+
+    return {
+      total: complaints.length,
+      submitted: byStatus.submitted || 0,
+      inProgress: byStatus.in_progress || 0,
+      resolved: byStatus.resolved || 0,
+      rejected: byStatus.rejected || 0,
+    };
+  }, [complaints]);
+
+  const localizedInsight = datasetInsight
+    ? {
+        ...datasetInsight,
+        distributions: {
+          age: normalizeDatasetItems(datasetInsight.distributions?.age),
+          sex: normalizeDatasetItems(datasetInsight.distributions?.sex),
+          feltLonely: normalizeDatasetItems(datasetInsight.distributions?.feltLonely),
+          missSchool: normalizeDatasetItems(datasetInsight.distributions?.missSchool),
+        },
+      }
+    : null;
+
+  const selectedComplaintDetail = useMemo(() => {
+    if (!selectedComplaint) {
+      return null;
+    }
+
+    const parsed = splitComplaintMessage(selectedComplaint.message);
+    const parsedFields = parsed.fields.length
+      ? parsed.fields
+      : complaintDetailLabels.map(([key, label]) => ({ key, label, value: "" }));
+
+    const normalizedFields = complaintDetailLabels.map(([key, label]) => {
+      const found = parsedFields.find((field) => field.key === key || field.label === label);
+      return {
+        key,
+        label,
+        value: found?.value || "",
+      };
+    });
+
+    return {
+      ...selectedComplaint,
+      parsedFields: normalizedFields,
+      rawMessage: parsed.raw,
+    };
+  }, [selectedComplaint]);
+
+  const currentView = adminNavItems.find((item) => item.value === adminView) || adminNavItems[0];
+  const recentComplaints = complaints.slice(0, 5);
+
+  const datasetInsightSection = (
+    <DatasetInsightSection
+      localizedInsight={localizedInsight}
+      datasetInsightLoading={datasetInsightLoading}
+      datasetInsightError={datasetInsightError}
+      showDatasetInsightDetail={showDatasetInsightDetail}
+      setShowDatasetInsightDetail={setShowDatasetInsightDetail}
+    />
+  );
+
+  const renderView = () => {
+    if (adminView === "dashboard") {
+      return (
+        <AdminDashboard
+          complaintStats={complaintStats}
+          pendingAccountRequests={pendingAccountRequests}
+          studentAccounts={studentAccounts}
+          recentComplaints={recentComplaints}
+          statusOptions={statusOptions}
+          statusColor={statusColor}
+          setAdminView={setAdminView}
+          setSelectedComplaint={setSelectedComplaint}
+          handleUseAccountRequest={handleUseAccountRequest}
+          localizedInsight={localizedInsight}
+          datasetInsightLoading={datasetInsightLoading}
+          datasetInsightError={datasetInsightError}
+          showDatasetInsightDetail={showDatasetInsightDetail}
+          setShowDatasetInsightDetail={setShowDatasetInsightDetail}
+        />
+      );
+    }
+
+    if (adminView === "account-requests") {
+      return (
+        <AccountRequestsSection
+          accountRequests={accountRequests}
+          fetchAccountRequests={fetchAccountRequests}
+          resolveMediaUrl={resolveMediaUrl}
+          handleUseAccountRequest={handleUseAccountRequest}
+          handleDeleteAccountRequest={handleDeleteAccountRequest}
+          createUserForm={createUserForm}
+          setCreateUserForm={setCreateUserForm}
+          handleCreateUser={handleCreateUser}
+          creatingUser={creatingUser}
+          error={error}
+          successMessage={successMessage}
+        />
+      );
+    }
+
+    if (adminView === "student-accounts") {
+      return (
+        <StudentAccountsSection
+          studentAccounts={studentAccounts}
+          studentAccountsLoading={studentAccountsLoading}
+          fetchStudentAccounts={fetchStudentAccounts}
+          handleDeleteStudentAccount={handleDeleteStudentAccount}
+          error={error}
+          successMessage={successMessage}
+        />
+      );
+    }
+
+    if (adminView === "complaints") {
+      return (
+        <ComplaintsSection
+          loading={loading}
+          filtered={filtered}
+          filter={filter}
+          setFilter={setFilter}
+          resolveMediaUrl={resolveMediaUrl}
+          statusOptions={statusOptions}
+          statusColor={statusColor}
+          fetchComplaints={fetchComplaints}
+          handleStatus={handleStatus}
+          handleDelete={handleDelete}
+          handleDownloadEvidence={handleDownloadEvidence}
+          setSelectedComplaint={setSelectedComplaint}
+          error={error}
+          successMessage={successMessage}
+        />
+      );
+    }
+
+    if (adminView === "insight") {
+      return datasetInsightSection;
+    }
+
+    return null;
+  };
+
+  return (
+    <div className="student-shell">
+      <div className="student-main">
+        <header className="student-header admin-header">
+          <div className="brand-inline admin-brand">
+            <img className="brand-logo" src="/logo-sma.jpg" alt="SMA Logo" />
+            <div className="brand-text">
+              <p className="muted small">SMA Negeri 1</p>
+              <strong className="title">Bangunrejo</strong>
+            </div>
+          </div>
+          <div className="header-actions">
+            <div className="user-chip admin-user-chip">
               <div>
-                <h3>Permohonan Akun</h3>
-                <p className="muted small">
-                  Data ini dikirim dari halaman registrasi dan bisa dipakai untuk mengisi form akun.
-                </p>
+                <strong>{user?.name}</strong>
+                <p className="muted small">Admin</p>
               </div>
-              <button className="ghost" type="button" onClick={() => fetchAccountRequests()}>
-                Muat ulang permohonan
-              </button>
             </div>
+            <button className="ghost" type="button" onClick={logout}>
+              Keluar
+            </button>
+          </div>
+        </header>
 
-            {accountRequests.length === 0 ? (
-              <div className="empty">Belum ada permohonan akun.</div>
-            ) : (
-              <div className="table-card admin-table">
-                <div className="table-slim head account-request-row">
-                  <span>Pemohon</span>
-                  <span>Kelas</span>
-                  <span>Kartu Pelajar</span>
-                  <span>Status</span>
-                  <span>Tanggal</span>
-                  <span>Aksi</span>
+        <main className="student-content admin-content">
+          <section className="workspace-layout admin-workspace-layout">
+            <AdminSidebar
+              user={user}
+              adminView={adminView}
+              setAdminView={setAdminView}
+              navItems={adminNavItems}
+              pendingCount={pendingAccountRequests.length}
+              inProgressCount={complaintStats.inProgress}
+              complaintTotal={complaintStats.total}
+            />
+
+            <div className="workspace-main admin-workspace-main">
+              <section className="welcome-card admin-welcome-card">
+                <div>
+                  <h2>{currentView.label}</h2>
+                  <p className="muted">{currentView.description}</p>
                 </div>
-                {accountRequests.map((request) => (
-                  <AccountRequestRow
-                    key={request.id}
-                    request={request}
-                    resolveMediaUrl={resolveMediaUrl}
-                    handleUseAccountRequest={handleUseAccountRequest}
-                  />
+              </section>
+
+              <section className="admin-switcher">
+                {adminNavItems.map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    className={adminView === item.value ? "admin-nav-btn active" : "admin-nav-btn"}
+                    onClick={() => setAdminView(item.value)}
+                  >
+                    {item.label}
+                  </button>
                 ))}
-              </div>
-            )}
-          </div>
+              </section>
 
-          <div className="card submit-card">
-            <h3>Buat Akun Baru</h3>
-            <p className="muted small">
-              Admin dapat membuat akun dengan role siswa atau admin.
-            </p>
-            {error && <div className="alert">{error}</div>}
-            {successMessage && <div className="alert success-alert">{successMessage}</div>}
-            <form
-              className="form stacked"
-              onSubmit={(event) => {
-                event.preventDefault();
-                handleCreateUser();
-              }}
-            >
-              <label>
-                Nama Lengkap
-                <input
-                  type="text"
-                  value={createUserForm.name}
-                  onChange={(event) =>
-                    setCreateUserForm({ ...createUserForm, name: event.target.value })
-                  }
-                  required
-                />
-              </label>
-              <label>
-                Email
-                <input
-                  type="email"
-                  value={createUserForm.email}
-                  onChange={(event) =>
-                    setCreateUserForm({ ...createUserForm, email: event.target.value })
-                  }
-                  required
-                />
-              </label>
-              <label>
-                Password
-                <input
-                  type="text"
-                  value={createUserForm.password}
-                  onChange={(event) =>
-                    setCreateUserForm({ ...createUserForm, password: event.target.value })
-                  }
-                  required
-                />
-              </label>
-              <label>
-                Role
-                <select
-                  value={createUserForm.role}
-                  onChange={(event) =>
-                    setCreateUserForm({ ...createUserForm, role: event.target.value })
-                  }
-                >
-                  <option value="student">Siswa</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </label>
-              {createUserForm.role === "student" && (
-                <label>
-                  Nama Kelas
-                  <input
-                    type="text"
-                    value={createUserForm.className}
-                    onChange={(event) =>
-                      setCreateUserForm({ ...createUserForm, className: event.target.value })
-                    }
-                    required
-                  />
-                </label>
-              )}
-              <div className="form-actions">
-                <button
-                  type="submit"
-                  disabled={
-                    creatingUser ||
-                    !createUserForm.name.trim() ||
-                    !createUserForm.email.trim() ||
-                    !createUserForm.password.trim() ||
-                    (createUserForm.role === "student" && !createUserForm.className.trim())
-                  }
-                >
-                  {creatingUser ? "Membuat..." : "Buat Akun"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </section>
+              {renderView()}
+            </div>
+          </section>
+        </main>
 
-        <section className="card schedule-card">
-          <div className="card-head">
-            <div>
-              <h3>Daftar Pengaduan</h3>
-              <p className="muted small">
-                Ubah status tindak lanjut atau hapus data yang tidak diperlukan.
-              </p>
-            </div>
-            <div className="filters">
-              <label>Status</label>
-              <select value={filter} onChange={(event) => setFilter(event.target.value)}>
-                <option value="all">Semua</option>
-                {statusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <button className="ghost" type="button" onClick={() => fetchComplaints()}>
-                Muat ulang
-              </button>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="empty">Memuat data...</div>
-          ) : filtered.length === 0 ? (
-            <div className="empty">Belum ada pengaduan yang masuk.</div>
-          ) : (
-            <div className="table-card admin-table">
-              <div className="table-slim head">
-                <span>Pelapor</span>
-                <span>Kategori</span>
-                <span>Pesan</span>
-                <span>Bukti</span>
-                <span>Status</span>
-                <span>Tanggal</span>
-                <span>Aksi</span>
-              </div>
-              {filtered.map((complaint) => (
-                <ComplaintRow
-                  key={complaint.id}
-                  complaint={complaint}
-                  resolveMediaUrl={resolveMediaUrl}
-                  statusOptions={statusOptions}
-                  statusColor={statusColor}
-                  handleStatus={handleStatus}
-                  handleDelete={handleDelete}
-                  handleDownloadEvidence={handleDownloadEvidence}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-      </main>
+        <ComplaintDetailModal
+          selectedComplaintDetail={selectedComplaintDetail}
+          statusOptions={statusOptions}
+          statusColor={statusColor}
+          resolveMediaUrl={resolveMediaUrl}
+          handleDownloadEvidence={handleDownloadEvidence}
+          onClose={() => setSelectedComplaint(null)}
+        />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default AdminPage;

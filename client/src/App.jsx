@@ -2,15 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import LoginLayout from "./components/LoginLayout";
 import StudentPage from "./components/StudentPage";
 import AdminPage from "./components/AdminPage";
+import { resolveMediaUrl as resolveMediaUrlValue } from "./utils/formatters";
 import "./App.css";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://backendpengaduan-production.up.railway.app";
-const complaintCategories = [
-  "Sarana dan Prasarana",
-  "Akademik",
-  "Kasus Pembulian",
-  "Lainnya",
-];
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 const statusOptions = [
   { value: "submitted", label: "Diajukan" },
@@ -32,36 +27,48 @@ const headers = (token) => ({
 });
 
 const resolveMediaUrl = (value) => {
-  if (!value) return "";
-  if (/^https?:\/\//i.test(value)) return value;
-  return `${API_URL}${value}`;
+  return resolveMediaUrlValue(value, API_URL);
 };
 
 function App() {
   const [complaints, setComplaints] = useState([]);
   const [accountRequests, setAccountRequests] = useState([]);
+  const [studentAccounts, setStudentAccounts] = useState([]);
+  const [studentAccountsLoading, setStudentAccountsLoading] = useState(false);
+  const [datasetInsight, setDatasetInsight] = useState(null);
+  const [datasetInsightLoading, setDatasetInsightLoading] = useState(false);
+  const [datasetInsightError, setDatasetInsightError] = useState("");
+  const [chatMessages, setChatMessages] = useState([
+    {
+      role: "assistant",
+      content:
+        "Halo, saya akan membantu menyusun laporan. Ceritakan kejadian yang ingin Anda laporkan secara singkat.",
+    },
+  ]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatFinalData, setChatFinalData] = useState(null);
+  const [chatEvidence, setChatEvidence] = useState(null);
+  const [chatSubmitting, setChatSubmitting] = useState(false);
+  const [chatEvidenceInputKey, setChatEvidenceInputKey] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
+  const [adminView, setAdminView] = useState("dashboard");
   const [filter, setFilter] = useState("all");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [form, setForm] = useState({
-    category: complaintCategories[0],
-    message: "",
-    evidence: null,
-  });
   const [authMode, setAuthMode] = useState("login");
   const [authForm, setAuthForm] = useState({
     name: "",
-    email: "",
+    username: "",
     password: "",
     className: "",
+    contactPhone: "",
     studentCard: null,
   });
   const [createUserForm, setCreateUserForm] = useState({
     name: "",
-    email: "",
+    username: "",
     password: "",
     role: "student",
     className: "",
@@ -110,6 +117,58 @@ function App() {
     }
   }, [token]);
 
+  const fetchStudentAccounts = useCallback(async (tkn = token) => {
+    if (!tkn) {
+      setStudentAccounts([]);
+      setStudentAccountsLoading(false);
+      return;
+    }
+
+    try {
+      setStudentAccountsLoading(true);
+      const res = await fetch(`${API_URL}/api/admin/users`, {
+        headers: headers(tkn),
+      });
+      const data = await res.json().catch(() => []);
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal memuat data akun siswa.");
+      }
+      setStudentAccounts(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError(err.message || "Gagal memuat data akun siswa.");
+      setStudentAccounts([]);
+    } finally {
+      setStudentAccountsLoading(false);
+    }
+  }, [token]);
+
+  const fetchDatasetInsight = useCallback(async (tkn = token) => {
+    if (!tkn) {
+      setDatasetInsight(null);
+      setDatasetInsightLoading(false);
+      setDatasetInsightError("");
+      return;
+    }
+
+    try {
+      setDatasetInsightLoading(true);
+      setDatasetInsightError("");
+      const res = await fetch(`${API_URL}/api/dataset/insight`, {
+        headers: headers(tkn),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Gagal memuat insight dataset.");
+      }
+      setDatasetInsight(data.data || null);
+    } catch {
+      setDatasetInsight(null);
+      setDatasetInsightError("Gagal memuat insight dataset.");
+    } finally {
+      setDatasetInsightLoading(false);
+    }
+  }, [token]);
+
   const fetchMe = useCallback(async (tkn) => {
     try {
       const res = await fetch(`${API_URL}/api/me`, {
@@ -121,9 +180,18 @@ function App() {
       await fetchComplaints(tkn);
 
       if (data.user?.role === "admin") {
-        await fetchAccountRequests(tkn);
+        await Promise.all([
+          fetchAccountRequests(tkn),
+          fetchStudentAccounts(tkn),
+          fetchDatasetInsight(tkn),
+        ]);
       } else {
         setAccountRequests([]);
+        setStudentAccounts([]);
+        setStudentAccountsLoading(false);
+        setDatasetInsight(null);
+        setDatasetInsightError("");
+        setDatasetInsightLoading(false);
       }
     } catch {
       setUser(null);
@@ -131,7 +199,7 @@ function App() {
       localStorage.removeItem("complain_token");
       setLoading(false);
     }
-  }, [fetchAccountRequests, fetchComplaints]);
+  }, [fetchAccountRequests, fetchComplaints, fetchDatasetInsight, fetchStudentAccounts]);
 
   useEffect(() => {
     if (token) {
@@ -141,42 +209,115 @@ function App() {
     }
   }, [token, fetchMe]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!token) {
-      setError("Login terlebih dahulu untuk mengirim pengaduan.");
+  const handleChatSend = async () => {
+    const message = chatInput.trim();
+    if (!message || !token || chatLoading) {
       return;
     }
-    setSubmitting(true);
+
+    const userMessage = { role: "user", content: message };
+    const newMessages = [...chatMessages, userMessage];
+
+    setChatMessages(newMessages);
+    setChatInput("");
+    setChatFinalData(null);
+    setChatLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch(`${API_URL}/api/chatbot/message`, {
+        method: "POST",
+        headers: headers(token),
+        body: JSON.stringify({
+          message,
+          history: newMessages,
+        }),
+      });
+
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          result.error || result.message || "Gagal menghubungi asisten pengaduan."
+        );
+      }
+
+      const assistantReply = result?.data?.reply || "";
+      if (assistantReply) {
+        setChatMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: assistantReply },
+        ]);
+      }
+
+      if (result?.data?.status === "completed") {
+        setChatFinalData(result.data.data || null);
+      }
+    } catch (err) {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            String(err.message || "").toLowerCase().includes("chatbot")
+              ? "Asisten pengaduan belum siap. Coba lagi beberapa saat."
+              : err.message || "Gagal menghubungi asisten pengaduan.",
+        },
+      ]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const handleChatSubmitComplaint = async () => {
+    if (!token || !chatFinalData || chatSubmitting) {
+      return;
+    }
+
+    setChatSubmitting(true);
     setError("");
     setSuccessMessage("");
+
     try {
-      const res = await fetch(`${API_URL}/api/complaints`, {
+      const payload = new FormData();
+      payload.append("finalData", JSON.stringify(chatFinalData));
+      if (chatEvidence) {
+        payload.append("evidence", chatEvidence);
+      }
+
+      const res = await fetch(`${API_URL}/api/chatbot/submit`, {
         method: "POST",
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: (() => {
-          const payload = new FormData();
-          payload.append("category", form.category);
-          payload.append("message", form.message);
-          if (form.evidence) {
-            payload.append("evidence", form.evidence);
-          }
-          return payload;
-        })(),
+        body: payload,
       });
+
+      const result = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        throw new Error(payload.error || "Gagal mengirim pengaduan.");
+        throw new Error(result.error || "Gagal menyimpan laporan.");
       }
-      const created = await res.json();
-      setComplaints((prev) => [created, ...prev]);
-      setForm({ category: complaintCategories[0], message: "", evidence: null });
+
+      const createdComplaint = result.complaint || result.data || result;
+      if (createdComplaint) {
+        setComplaints((prev) => [createdComplaint, ...prev]);
+      }
+
+      setChatMessages([
+        {
+          role: "assistant",
+          content:
+            "Halo, saya akan membantu menyusun laporan. Ceritakan kejadian yang ingin Anda laporkan secara singkat.",
+        },
+      ]);
+      setChatFinalData(null);
+      setChatEvidence(null);
+      setChatEvidenceInputKey((prev) => prev + 1);
+      setChatInput("");
+      setSuccessMessage("Laporan berhasil dikirim ke database.");
     } catch (err) {
-      setError(err.message || "Gagal mengirim pengaduan.");
+      setError(err.message || "Gagal menyimpan laporan.");
     } finally {
-      setSubmitting(false);
+      setChatSubmitting(false);
     }
   };
 
@@ -252,15 +393,16 @@ function App() {
             ? (() => {
                 const payload = new FormData();
                 payload.append("name", authForm.name);
-                payload.append("email", authForm.email);
+                payload.append("username", authForm.username);
                 payload.append("className", authForm.className);
+                payload.append("contactPhone", authForm.contactPhone);
                 if (authForm.studentCard) {
                   payload.append("studentCard", authForm.studentCard);
                 }
                 return payload;
               })()
             : JSON.stringify({
-                email: authForm.email,
+                username: authForm.username,
                 password: authForm.password,
               }),
       });
@@ -272,13 +414,14 @@ function App() {
 
       if (mode === "register") {
         setSuccessMessage(
-          data.message || "Permohonan akun berhasil dikirim. Tunggu admin memprosesnya."
+          data.message || "Permohonan akun berhasil dikirim. Tunggu diproses."
         );
         setAuthForm({
           name: "",
-          email: "",
+          username: "",
           password: "",
           className: "",
+          contactPhone: "",
           studentCard: null,
         });
         setAuthMode("login");
@@ -290,14 +433,17 @@ function App() {
       setUser(data.user);
       setAuthForm({
         name: "",
-        email: "",
+        username: "",
         password: "",
         className: "",
+        contactPhone: "",
         studentCard: null,
       });
       fetchComplaints(data.token);
       if (data.user?.role === "admin") {
         fetchAccountRequests(data.token);
+        fetchStudentAccounts(data.token);
+        fetchDatasetInsight(data.token);
       }
     } catch (err) {
       setError(err.message || "Login/daftar gagal.");
@@ -322,13 +468,13 @@ function App() {
       setSuccessMessage(data.message || "Akun berhasil dibuat.");
       setCreateUserForm({
         name: "",
-        email: "",
+        username: "",
         password: "",
         role: "student",
         className: "",
         requestId: "",
       });
-      await fetchAccountRequests();
+      await Promise.all([fetchAccountRequests(), fetchStudentAccounts()]);
     } catch (err) {
       setError(err.message || "Gagal membuat akun.");
     } finally {
@@ -339,7 +485,7 @@ function App() {
   const handleUseAccountRequest = (request) => {
     setCreateUserForm({
       name: request.name || "",
-      email: request.email || "",
+      username: request.username || "",
       password: "",
       role: "student",
       className: request.className || "",
@@ -349,13 +495,85 @@ function App() {
     setSuccessMessage("");
   };
 
+  const handleDeleteAccountRequest = async (id) => {
+    const confirmed = window.confirm(
+      "Hapus permohonan akun ini dari daftar? Tindakan ini tidak bisa dibatalkan."
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setError("");
+      setSuccessMessage("");
+      const res = await fetch(`${API_URL}/api/account-requests/${id}`, {
+        method: "DELETE",
+        headers: headers(token),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal menghapus permohonan akun.");
+      }
+
+      setAccountRequests((prev) => prev.filter((request) => request.id !== id));
+      setSuccessMessage("Permohonan akun berhasil dihapus.");
+    } catch (err) {
+      setError(err.message || "Gagal menghapus permohonan akun.");
+    }
+  };
+
+  const handleDeleteStudentAccount = async (id) => {
+    const confirmed = window.confirm(
+      "Hapus akun siswa ini? Siswa tidak akan bisa login lagi."
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setError("");
+      setSuccessMessage("");
+      const res = await fetch(`${API_URL}/api/admin/users/${id}`, {
+        method: "DELETE",
+        headers: headers(token),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal menghapus akun siswa.");
+      }
+
+      setStudentAccounts((prev) => prev.filter((account) => account.id !== id));
+      setSuccessMessage(data.message || "Akun siswa berhasil dihapus.");
+    } catch (err) {
+      setError(err.message || "Gagal menghapus akun siswa.");
+    }
+  };
+
   const logout = () => {
     setUser(null);
     setToken("");
     localStorage.removeItem("complain_token");
     setComplaints([]);
     setAccountRequests([]);
+    setStudentAccounts([]);
+    setStudentAccountsLoading(false);
+    setDatasetInsight(null);
+    setDatasetInsightLoading(false);
+    setDatasetInsightError("");
     setSuccessMessage("");
+    setChatMessages([
+      {
+        role: "assistant",
+        content:
+          "Halo, saya akan membantu menyusun laporan. Ceritakan kejadian yang ingin Anda laporkan secara singkat.",
+      },
+    ]);
+    setChatInput("");
+    setChatLoading(false);
+    setChatFinalData(null);
+    setChatEvidence(null);
+    setChatSubmitting(false);
+    setChatEvidenceInputKey((prev) => prev + 1);
   };
 
   const filtered = useMemo(() => {
@@ -390,7 +608,10 @@ function App() {
       <AdminPage
         user={user}
         logout={logout}
+        adminView={adminView}
+        setAdminView={setAdminView}
         loading={loading}
+        complaints={complaints}
         filtered={filtered}
         filter={filter}
         setFilter={setFilter}
@@ -403,11 +624,19 @@ function App() {
         handleDownloadEvidence={handleDownloadEvidence}
         accountRequests={accountRequests}
         fetchAccountRequests={fetchAccountRequests}
+        studentAccounts={studentAccounts}
+        studentAccountsLoading={studentAccountsLoading}
+        fetchStudentAccounts={fetchStudentAccounts}
+        handleDeleteStudentAccount={handleDeleteStudentAccount}
+        datasetInsight={datasetInsight}
+        datasetInsightLoading={datasetInsightLoading}
+        datasetInsightError={datasetInsightError}
         createUserForm={createUserForm}
         setCreateUserForm={setCreateUserForm}
         handleCreateUser={handleCreateUser}
         creatingUser={creatingUser}
         handleUseAccountRequest={handleUseAccountRequest}
+        handleDeleteAccountRequest={handleDeleteAccountRequest}
         error={error}
         successMessage={successMessage}
       />
@@ -415,25 +644,32 @@ function App() {
   }
 
   return (
-    <StudentPage
-      user={user}
-      form={form}
-      setForm={setForm}
-      resolveMediaUrl={resolveMediaUrl}
-      submitting={submitting}
-      handleSubmit={handleSubmit}
-      logout={logout}
-      error={error}
-      complaintCategories={complaintCategories}
-      loading={loading}
-      filtered={filtered}
-      filter={filter}
-      setFilter={setFilter}
-      statusOptions={statusOptions}
-      statusColor={statusColor}
-      fetchComplaints={fetchComplaints}
-    />
-  );
-}
+      <StudentPage
+        user={user}
+        resolveMediaUrl={resolveMediaUrl}
+        logout={logout}
+        error={error}
+        loading={loading}
+        complaints={complaints}
+        filtered={filtered}
+        filter={filter}
+        setFilter={setFilter}
+        statusOptions={statusOptions}
+        statusColor={statusColor}
+        fetchComplaints={fetchComplaints}
+        chatMessages={chatMessages}
+        chatInput={chatInput}
+        setChatInput={setChatInput}
+        chatLoading={chatLoading}
+        chatFinalData={chatFinalData}
+        chatEvidence={chatEvidence}
+        setChatEvidence={setChatEvidence}
+        chatEvidenceInputKey={chatEvidenceInputKey}
+        chatSubmitting={chatSubmitting}
+        handleChatSend={handleChatSend}
+        handleChatSubmitComplaint={handleChatSubmitComplaint}
+      />
+    );
+  }
 
 export default App;

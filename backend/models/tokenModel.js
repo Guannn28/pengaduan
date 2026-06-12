@@ -1,4 +1,4 @@
-const { getCollections } = require("../../backend_fix/config/db");
+const { getCollections } = require("../config/db");
 
 const upsertTokenSession = (userId, token, expiresAt) => {
   const { tokensCollection } = getCollections();

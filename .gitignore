@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+dist-ssr/
+build/
+coverage/
+client/dist/
+backend/dist/
+
+# Runtime uploads
+uploads/
+backend/uploads/
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+data/*.db
+
+# Environment files
+.env
+.env.*
+backend/.env
+backend/.env.*
+client/.env
+client/.env.*
+!.env.example
+!backend/.env.example
+!client/.env.example
+!client/.env.production
+
+# Logs and caches
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.eslintcache
+.vite/
+backend/.npm-cache/
+client/.vite/
+
+# Editor and OS files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

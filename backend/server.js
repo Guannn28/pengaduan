@@ -1,28 +1,33 @@
-const express = require("express");
-const { initDb } = require("./config/db");
-const authRoutes = require("./routes/auth");
+const app = require("./app");
+const { initDb, markDbDisconnected } = require("./config/db");
+const env = require("./config/env");
 
-app.use("/api", authRoutes);
-
-const app = express();
-app.use(express.json());
-
-app.get("/", (req, res) => {
-  res.send("Server hidup 🚀");
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught exception:", error);
 });
 
-const PORT = process.env.PORT || 3000;
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled rejection:", reason);
+});
 
-(async () => {
+const HOST = "0.0.0.0";
+const PORT = process.env.PORT || 8080;
+const DB_RETRY_MS = 10000;
+
+app.listen(PORT, HOST, () => {
+  console.log(`Server running on ${HOST}:${PORT}`);
+});
+
+const connectToDb = async () => {
   try {
     await initDb();
-    console.log("DB connected");
+    console.log(`MongoDB connected (${env.MONGODB_DB_NAME})`);
   } catch (err) {
-    console.error("DB gagal:", err.message);
-    // tetap lanjut supaya server hidup
+    markDbDisconnected(err);
+    console.error("DB error:", err.message);
+    console.log(`Retrying DB connection in ${DB_RETRY_MS / 1000}s...`);
+    setTimeout(connectToDb, DB_RETRY_MS);
   }
+};
 
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-})();
+connectToDb();

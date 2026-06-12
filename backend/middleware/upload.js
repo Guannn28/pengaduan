@@ -1,7 +1,7 @@
 const path = require("path");
 const multer = require("multer");
-const { accountRequestCardPath, complaintEvidencePath } = require("../config/paths");
-const { allowedEvidenceMimeTypes } = require("../config/constants");
+const { accountRequestCardPath, complaintEvidencePath } = require("../paths");
+const { allowedEvidenceMimeTypes } = require("../constants");
 const { generateFilenameToken } = require("../utils/security");
 
 const createDiskUpload = ({

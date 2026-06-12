@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
-const { complaintCategories, complaintStatuses } = require("../config/constants");
+const { complaintCategories, complaintStatuses } = require("../constants");
+const { getDbState } = require("../config/db");
 const {
   aggregateComplaintCounts,
   createComplaint,
@@ -14,14 +15,21 @@ const { normalizeComplaint } = require("../utils/serializers");
 const { getLocalEvidencePath, removeLocalEvidence } = require("../utils/fileStorage");
 
 const health = async (_req, res) => {
-  res.json({ ok: true, timestamp: new Date().toISOString() });
+  const dbState = getDbState();
+  res.json({
+    ok: true,
+    timestamp: new Date().toISOString(),
+    database: dbState.connected ? "connected" : "disconnected",
+    lastDatabaseError: dbState.lastError || null,
+    lastDatabaseConnectedAt: dbState.lastConnectedAt || null,
+  });
 };
 
 const listComplaints = async (req, res) => {
   try {
     const query = req.user.role === "admin" ? {} : { userId: parseObjectId(req.user.id) };
     const rows = await findComplaints(query, { sort: { createdAt: -1 } });
-    return res.json(rows.map(normalizeComplaint));
+    return res.json(rows.map((row) => normalizeComplaint(row, { viewerRole: req.user.role })));
   } catch (err) {
     console.error("List complaints error", err);
     return res.status(500).json({ error: "Gagal mengambil pengaduan." });
@@ -30,7 +38,7 @@ const listComplaints = async (req, res) => {
 
 const createComplaintHandler = async (req, res) => {
   try {
-    const { category, message } = req.body || {};
+    const { category, message, isAnonymous } = req.body || {};
 
     if (!category || !message) {
       return res.status(400).json({ error: "Kategori dan pesan wajib diisi." });
@@ -45,11 +53,16 @@ const createComplaintHandler = async (req, res) => {
       return res.status(400).json({ error: "Kategori tidak valid." });
     }
 
+    const normalizedAnonymous =
+      String(isAnonymous).trim().toLowerCase() === "true" ||
+      String(isAnonymous).trim() === "1";
+
     const now = new Date();
     const result = await createComplaint({
       userId: parseObjectId(req.user.id),
       name: req.user.name,
-      email: req.user.email,
+      username: req.user.username,
+      isAnonymous: normalizedAnonymous,
       category: normalizedCategory,
       message: String(message).trim(),
       evidenceUrl: `/uploads/complaints/${req.file.filename}`,
@@ -61,7 +74,7 @@ const createComplaintHandler = async (req, res) => {
     });
 
     const created = await findComplaintById(result.insertedId);
-    return res.status(201).json(normalizeComplaint(created));
+    return res.status(201).json(normalizeComplaint(created, { viewerRole: req.user.role }));
   } catch (err) {
     console.error("Create complaint error", err);
     return res.status(500).json({ error: "Gagal membuat pengaduan." });
@@ -88,7 +101,7 @@ const updateComplaintStatus = async (req, res) => {
     });
 
     const updated = await findComplaintById(objectId);
-    return res.json(normalizeComplaint(updated));
+    return res.json(normalizeComplaint(updated, { viewerRole: req.user.role }));
   } catch (err) {
     console.error("Update status error", err);
     return res.status(500).json({ error: "Gagal memperbarui status." });
@@ -151,7 +164,7 @@ const getStats = async (_req, res) => {
     const latestRows = await findComplaints({}, { sort: { createdAt: -1 }, limit: 5 });
     return res.json({
       counts,
-      latest: latestRows.map(normalizeComplaint),
+      latest: latestRows.map((row) => normalizeComplaint(row, { viewerRole: "admin" })),
     });
   } catch (err) {
     console.error("Stats error", err);
