@@ -1,4 +1,5 @@
 const { getCollections } = require("../config/db");
+const { complaintCategories } = require("../constants");
 
 const findComplaints = (query, options = {}) => {
   const { complaintsCollection } = getCollections();
@@ -12,6 +13,9 @@ const findComplaints = (query, options = {}) => {
 };
 
 const createComplaint = (payload) => {
+  if (payload.category && !complaintCategories.includes(payload.category)) {
+    return Promise.reject(new Error(`Validation Error: Kategori '${payload.category}' tidak valid.`));
+  }
   const { complaintsCollection } = getCollections();
   return complaintsCollection.insertOne(payload);
 };

@@ -1,17 +1,17 @@
 import { useMemo, useState } from "react";
-import AccountRequestsSection from "./admin/AccountRequestsSection";
-import AdminDashboard from "./admin/AdminDashboard";
-import AdminSidebar from "./admin/AdminSidebar";
-import ComplaintsSection from "./admin/ComplaintsSection";
-import ComplaintDetailModal from "./admin/ComplaintDetailModal";
-import DatasetInsightSection from "./admin/DatasetInsightSection";
-import StudentAccountsSection from "./admin/StudentAccountsSection";
+import AccountRequestsSection from "../components/admin/AccountRequestsSection";
+import AdminDashboard from "../components/admin/AdminDashboard";
+import AdminSidebar from "../components/admin/AdminSidebar";
+import ComplaintsSection from "../components/admin/ComplaintsSection";
+import ComplaintDetailModal from "../components/admin/ComplaintDetailModal";
+import DatasetInsightSection from "../components/admin/DatasetInsightSection";
+import StudentAccountsSection from "../components/admin/StudentAccountsSection";
 import {
   adminNavItems,
   complaintDetailLabels,
   normalizeDatasetItems,
   splitComplaintMessage,
-} from "./admin/adminUtils";
+} from "../components/admin/adminUtils";
 
 const AdminPage = ({
   user,

@@ -4,7 +4,11 @@ import {
   getUrgencyBadgeClass,
   getUrgencyValue,
 } from "../../utils/formatters";
+import { RefreshCw, FileX, Search } from "lucide-react";
 
+/**
+ * Preview foto/video bukti pada baris tabel pengaduan siswa.
+ */
 const EvidencePreview = ({ complaint, resolveMediaUrl }) => {
   if (!complaint.evidenceUrl) {
     return <span className="muted small">Tidak ada bukti</span>;
@@ -34,6 +38,50 @@ const EvidencePreview = ({ complaint, resolveMediaUrl }) => {
   );
 };
 
+/**
+ * Skeleton Loading — Animasi placeholder shimmer saat data API sedang dimuat.
+ * Mencegah tampilan kosong/blank yang membingungkan pengguna.
+ */
+const SkeletonRows = () => (
+  <div className="table-card">
+    {[1, 2, 3].map((i) => (
+      <div key={i} className="skeleton-row">
+        <div className="skeleton skeleton-badge" />
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div className="skeleton skeleton-text" style={{ width: "40%" }} />
+          <div className="skeleton skeleton-sm" />
+        </div>
+        <div className="skeleton skeleton-text" style={{ width: "80px" }} />
+      </div>
+    ))}
+  </div>
+);
+
+/**
+ * Empty State — Tampilan informatif dan empatik ketika tidak ada data pengaduan.
+ * Menyesuaikan pesan berdasarkan konteks filter yang aktif.
+ */
+const EmptyState = ({ filter }) => (
+  <div className="empty-state">
+    <div className="empty-state-icon">
+      {filter === "all"
+        ? <FileX size={48} strokeWidth={1} color="var(--text-muted)" />
+        : <Search size={48} strokeWidth={1} color="var(--text-muted)" />
+      }
+    </div>
+    <h4>
+      {filter === "all"
+        ? "Belum ada pengaduan"
+        : "Tidak ada pengaduan dengan status ini"}
+    </h4>
+    <p>
+      {filter === "all"
+        ? "Anda belum pernah mengirim laporan. Gunakan asisten di sebelah kanan untuk membuat pengaduan pertama Anda."
+        : "Coba ubah filter status untuk melihat pengaduan lainnya."}
+    </p>
+  </div>
+);
+
 const StudentComplaintList = ({
   loading,
   filtered,
@@ -48,7 +96,8 @@ const StudentComplaintList = ({
   <div className="card schedule-card">
     <div className="card-head">
       <div>
-        <h3>Pengaduan Anda</h3>
+        <h3>Riwayat Pengaduan</h3>
+        <p className="muted small">Daftar seluruh laporan yang telah Anda kirimkan.</p>
       </div>
       <div className="filters">
         <label>Status</label>
@@ -60,16 +109,17 @@ const StudentComplaintList = ({
             </option>
           ))}
         </select>
-        <button className="ghost" onClick={() => fetchComplaints()}>
-          Muat ulang
+        <button className="ghost" onClick={() => fetchComplaints()} type="button" style={{ gap: "7px" }}>
+          <RefreshCw size={14} strokeWidth={2.5} />
+          Perbarui
         </button>
       </div>
     </div>
 
     {loading ? (
-      <div className="empty">Memuat data...</div>
+      <SkeletonRows />
     ) : filtered.length === 0 ? (
-      <div className="empty">Belum ada pengaduan yang dikirim.</div>
+      <EmptyState filter={filter} />
     ) : (
       <div className="table-card student-complaints-table">
         <div className="table-slim head student-complaints-head">
@@ -92,7 +142,7 @@ const StudentComplaintList = ({
               </span>
               <span data-label="Kategori">{complaint.category}</span>
               <span className="muted small" data-label="Tipe">
-                {complaint.isAnonymous ? "Anonim" : "Tidak anonim"}
+                {complaint.isAnonymous ? "Anonim" : "Tidak Anonim"}
               </span>
               <span data-label="Pesan">
                 <div className="student-message-preview">{complaint.message}</div>
@@ -102,7 +152,7 @@ const StudentComplaintList = ({
                   className="ghost student-detail-button"
                   onClick={() => onOpenDetail(complaint)}
                 >
-                  Lihat detail
+                  Lihat Detail
                 </button>
               </span>
               <span data-label="Bukti">

@@ -1,9 +1,13 @@
 const complaintCategories = [
-  "Sarana dan Prasarana",
-  "Akademik",
-  "Kasus Pembulian",
-  "Pelecehan",
-  "Kekerasan",
+  "Perundungan & Bullying",
+  "Kekerasan Fisik",
+  "Kekerasan Verbal",
+  "Pelecehan Seksual",
+  "Pelecehan Non-Seksual",
+  "Masalah Akademik",
+  "Diskriminasi",
+  "Pelanggaran Privasi",
+  "Fasilitas & Keamanan",
   "Lainnya",
 ];
 

@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
-import AssistantComplaintCard from "./student/AssistantComplaintCard";
-import StudentComplaintDetailModal from "./student/StudentComplaintDetailModal";
-import StudentComplaintList from "./student/StudentComplaintList";
-import StudentHeader from "./student/StudentHeader";
-import StudentOverviewRail from "./student/StudentOverviewRail";
-import { parseComplaintMessage } from "./student/studentUtils";
+import AssistantComplaintCard from "../components/student/AssistantComplaintCard";
+import StudentComplaintDetailModal from "../components/student/StudentComplaintDetailModal";
+import StudentComplaintList from "../components/student/StudentComplaintList";
+import StudentHeader from "../components/student/StudentHeader";
+import StudentOverviewRail from "../components/student/StudentOverviewRail";
+import { parseComplaintMessage } from "../components/student/studentUtils";
 
 const StudentPage = ({
   user,
@@ -30,6 +30,11 @@ const StudentPage = ({
   chatSubmitting,
   handleChatSend,
   handleChatSubmitComplaint,
+  chatAttachment,
+  chatUploadedEvidence,
+  chatAttachUploading,
+  handleChatAttach,
+  handleChatRemoveAttachment,
 }) => {
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const initials = (user?.name || user?.username || "M").substring(0, 2).toUpperCase();
@@ -108,6 +113,11 @@ const StudentPage = ({
                   chatSubmitting={chatSubmitting}
                   handleChatSend={handleChatSend}
                   handleChatSubmitComplaint={handleChatSubmitComplaint}
+                  chatAttachment={chatAttachment}
+                  chatUploadedEvidence={chatUploadedEvidence}
+                  chatAttachUploading={chatAttachUploading}
+                  handleChatAttach={handleChatAttach}
+                  handleChatRemoveAttachment={handleChatRemoveAttachment}
                 />
               </section>
             </div>

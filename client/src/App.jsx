@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import LoginLayout from "./components/LoginLayout";
-import StudentPage from "./components/StudentPage";
-import AdminPage from "./components/AdminPage";
+import StudentPage from "./pages/StudentPage";
+import AdminPage from "./pages/AdminPage";
 import { resolveMediaUrl as resolveMediaUrlValue } from "./utils/formatters";
 import "./App.css";
+import { api } from "./services/api";
+import { useToast } from "./context/ToastContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
@@ -21,16 +23,12 @@ const statusColor = {
   rejected: "badge danger",
 };
 
-const headers = (token) => ({
-  "Content-Type": "application/json",
-  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-});
-
 const resolveMediaUrl = (value) => {
   return resolveMediaUrlValue(value, API_URL);
 };
 
 function App() {
+  const { showToast } = useToast();
   const [complaints, setComplaints] = useState([]);
   const [accountRequests, setAccountRequests] = useState([]);
   const [studentAccounts, setStudentAccounts] = useState([]);
@@ -51,10 +49,14 @@ function App() {
   const [chatEvidence, setChatEvidence] = useState(null);
   const [chatSubmitting, setChatSubmitting] = useState(false);
   const [chatEvidenceInputKey, setChatEvidenceInputKey] = useState(0);
+  const [chatAttachment, setChatAttachment] = useState(null);
+  const [chatUploadedEvidence, setChatUploadedEvidence] = useState(null);
+  const [chatAttachUploading, setChatAttachUploading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [creatingUser, setCreatingUser] = useState(false);
   const [adminView, setAdminView] = useState("dashboard");
   const [filter, setFilter] = useState("all");
+  // error/successMessage masih digunakan untuk komponen LoginLayout yang tidak pakai toast
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [authMode, setAuthMode] = useState("login");
@@ -87,17 +89,14 @@ function App() {
     }
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/api/complaints`, {
-        headers: headers(tkn),
-      });
-      const data = await res.json();
+      const data = await api.getComplaints(tkn);
       setComplaints(data);
     } catch {
-      setError("Gagal memuat data, coba lagi.");
+      showToast("Gagal memuat data pengaduan. Coba lagi.", "error");
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, showToast]);
 
   const fetchAccountRequests = useCallback(async (tkn = token) => {
     if (!tkn) {
@@ -106,16 +105,12 @@ function App() {
     }
 
     try {
-      const res = await fetch(`${API_URL}/api/account-requests`, {
-        headers: headers(tkn),
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
+      const data = await api.getAccountRequests(tkn);
       setAccountRequests(data);
     } catch {
-      setError("Gagal memuat permohonan akun.");
+      showToast("Gagal memuat permohonan akun.", "error");
     }
-  }, [token]);
+  }, [token, showToast]);
 
   const fetchStudentAccounts = useCallback(async (tkn = token) => {
     if (!tkn) {
@@ -126,21 +121,15 @@ function App() {
 
     try {
       setStudentAccountsLoading(true);
-      const res = await fetch(`${API_URL}/api/admin/users`, {
-        headers: headers(tkn),
-      });
-      const data = await res.json().catch(() => []);
-      if (!res.ok) {
-        throw new Error(data.error || "Gagal memuat data akun siswa.");
-      }
+      const data = await api.getStudentAccounts(tkn);
       setStudentAccounts(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.message || "Gagal memuat data akun siswa.");
+      showToast(err.message || "Gagal memuat data akun siswa.", "error");
       setStudentAccounts([]);
     } finally {
       setStudentAccountsLoading(false);
     }
-  }, [token]);
+  }, [token, showToast]);
 
   const fetchDatasetInsight = useCallback(async (tkn = token) => {
     if (!tkn) {
@@ -153,14 +142,8 @@ function App() {
     try {
       setDatasetInsightLoading(true);
       setDatasetInsightError("");
-      const res = await fetch(`${API_URL}/api/dataset/insight`, {
-        headers: headers(tkn),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || "Gagal memuat insight dataset.");
-      }
-      setDatasetInsight(data.data || null);
+      const data = await api.getDatasetInsight(tkn);
+      setDatasetInsight(data || null);
     } catch {
       setDatasetInsight(null);
       setDatasetInsightError("Gagal memuat insight dataset.");
@@ -171,11 +154,7 @@ function App() {
 
   const fetchMe = useCallback(async (tkn) => {
     try {
-      const res = await fetch(`${API_URL}/api/me`, {
-        headers: headers(tkn),
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
+      const data = await api.getMe(tkn);
       setUser(data.user);
       await fetchComplaints(tkn);
 
@@ -209,6 +188,34 @@ function App() {
     }
   }, [token, fetchMe]);
 
+  const handleChatAttach = async (file) => {
+    if (!file) {
+      setChatAttachment(null);
+      setChatUploadedEvidence(null);
+      return;
+    }
+
+    setChatAttachment(file);
+    setChatAttachUploading(true);
+    try {
+      const result = await api.uploadChatEvidence(token, file);
+      console.log("[Frontend Debug] Bukti berhasil diupload:", result);
+      setChatUploadedEvidence(result.file);
+      showToast("Foto bukti berhasil dilampirkan.", "success");
+    } catch (err) {
+      showToast(err.message || "Gagal mengupload foto bukti.", "error");
+      setChatAttachment(null);
+      setChatUploadedEvidence(null);
+    } finally {
+      setChatAttachUploading(false);
+    }
+  };
+
+  const handleChatRemoveAttachment = () => {
+    setChatAttachment(null);
+    setChatUploadedEvidence(null);
+  };
+
   const handleChatSend = async () => {
     const message = chatInput.trim();
     if (!message || !token || chatLoading) {
@@ -216,6 +223,10 @@ function App() {
     }
 
     const userMessage = { role: "user", content: message };
+    // Jika ada lampiran, tampilkan info di bubble chat pengguna
+    if (chatAttachment) {
+      userMessage.content += `\n📎 Lampiran: ${chatAttachment.name}`;
+    }
     const newMessages = [...chatMessages, userMessage];
 
     setChatMessages(newMessages);
@@ -225,23 +236,10 @@ function App() {
     setError("");
 
     try {
-      const res = await fetch(`${API_URL}/api/chatbot/message`, {
-        method: "POST",
-        headers: headers(token),
-        body: JSON.stringify({
-          message,
-          history: newMessages,
-        }),
-      });
+      const result = await api.sendChatbotMessage(token, message, newMessages, chatUploadedEvidence || undefined);
+      console.log("[Frontend Debug] Balasan API:", result);
 
-      const result = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(
-          result.error || result.message || "Gagal menghubungi asisten pengaduan."
-        );
-      }
-
-      const assistantReply = result?.data?.reply || "";
+      const assistantReply = result?.message || "";
       if (assistantReply) {
         setChatMessages((prev) => [
           ...prev,
@@ -249,8 +247,11 @@ function App() {
         ]);
       }
 
-      if (result?.data?.status === "completed") {
-        setChatFinalData(result.data.data || null);
+      // Jika response backend mengembalikan format utuh, handle juga
+      const status = result?.status || result?.data?.status;
+      if (status === "completed") {
+        showToast("Laporan dikumpulkan secara otomatis (atau siap dikirim).", "info");
+        setChatFinalData(result?.data?.data || result?.data || null);
       }
     } catch (err) {
       setChatMessages((prev) => [
@@ -284,19 +285,7 @@ function App() {
         payload.append("evidence", chatEvidence);
       }
 
-      const res = await fetch(`${API_URL}/api/chatbot/submit`, {
-        method: "POST",
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: payload,
-      });
-
-      const result = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(result.error || "Gagal menyimpan laporan.");
-      }
-
+      const result = await api.submitChatbotComplaint(token, payload);
       const createdComplaint = result.complaint || result.data || result;
       if (createdComplaint) {
         setComplaints((prev) => [createdComplaint, ...prev]);
@@ -313,9 +302,9 @@ function App() {
       setChatEvidence(null);
       setChatEvidenceInputKey((prev) => prev + 1);
       setChatInput("");
-      setSuccessMessage("Laporan berhasil dikirim ke database.");
+      showToast("Laporan berhasil dikirim ke sistem!", "success");
     } catch (err) {
-      setError(err.message || "Gagal menyimpan laporan.");
+      showToast(err.message || "Gagal menyimpan laporan.", "error");
     } finally {
       setChatSubmitting(false);
     }
@@ -323,49 +312,29 @@ function App() {
 
   const handleStatus = async (id, status) => {
     try {
-      const res = await fetch(`${API_URL}/api/complaints/${id}/status`, {
-        method: "PATCH",
-        headers: headers(token),
-        body: JSON.stringify({ status }),
-      });
-      if (!res.ok) throw new Error();
-      const updated = await res.json();
+      const updated = await api.updateComplaintStatus(token, id, status);
       setComplaints((prev) =>
         prev.map((c) => (c.id === id ? { ...c, ...updated } : c))
       );
+      showToast("Status pengaduan berhasil diperbarui.", "success");
     } catch {
-      setError("Tidak bisa memperbarui status.");
+      showToast("Tidak bisa memperbarui status pengaduan.", "error");
     }
   };
 
   const handleDelete = async (id) => {
     try {
-      const res = await fetch(`${API_URL}/api/complaints/${id}`, {
-        method: "DELETE",
-        headers: headers(token),
-      });
-      if (!res.ok) throw new Error();
+      await api.deleteComplaint(token, id);
       setComplaints((prev) => prev.filter((c) => c.id !== id));
+      showToast("Pengaduan berhasil dihapus.", "success");
     } catch {
-      setError("Gagal menghapus pengaduan.");
+      showToast("Gagal menghapus pengaduan.", "error");
     }
   };
 
   const handleDownloadEvidence = async (complaint) => {
     try {
-      setError("");
-      const res = await fetch(`${API_URL}/api/complaints/${complaint.id}/evidence/download`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        throw new Error(payload.error || "Gagal mengunduh file bukti.");
-      }
-
-      const blob = await res.blob();
+      const blob = await api.downloadEvidence(token, complaint.id);
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = downloadUrl;
@@ -374,45 +343,28 @@ function App() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(downloadUrl);
+      showToast("File bukti berhasil diunduh.", "success");
     } catch (err) {
-      setError(err.message || "Gagal mengunduh file bukti.");
+      showToast(err.message || "Gagal mengunduh file bukti.", "error");
     }
   };
 
   const authAction = async (mode) => {
     setError("");
     setSuccessMessage("");
-    const endpoint = mode === "register" ? "register" : "login";
     try {
-      const res = await fetch(`${API_URL}/api/${endpoint}`, {
-        method: "POST",
-        headers:
-          mode === "register" ? undefined : { "Content-Type": "application/json" },
-        body:
-          mode === "register"
-            ? (() => {
-                const payload = new FormData();
-                payload.append("name", authForm.name);
-                payload.append("username", authForm.username);
-                payload.append("className", authForm.className);
-                payload.append("contactPhone", authForm.contactPhone);
-                if (authForm.studentCard) {
-                  payload.append("studentCard", authForm.studentCard);
-                }
-                return payload;
-              })()
-            : JSON.stringify({
-                username: authForm.username,
-                password: authForm.password,
-              }),
-      });
-      if (!res.ok) {
-        const msg = await res.json().catch(() => ({}));
-        throw new Error(msg.error || "Gagal masuk/daftar");
-      }
-      const data = await res.json();
-
+      let data;
       if (mode === "register") {
+        const payload = new FormData();
+        payload.append("name", authForm.name);
+        payload.append("username", authForm.username);
+        payload.append("className", authForm.className);
+        payload.append("contactPhone", authForm.contactPhone);
+        if (authForm.studentCard) {
+          payload.append("studentCard", authForm.studentCard);
+        }
+        data = await api.register(payload);
+        
         setSuccessMessage(
           data.message || "Permohonan akun berhasil dikirim. Tunggu diproses."
         );
@@ -426,6 +378,8 @@ function App() {
         });
         setAuthMode("login");
         return;
+      } else {
+        data = await api.login(authForm.username, authForm.password);
       }
 
       setToken(data.token);
@@ -452,20 +406,9 @@ function App() {
 
   const handleCreateUser = async () => {
     setCreatingUser(true);
-    setError("");
-    setSuccessMessage("");
     try {
-      const res = await fetch(`${API_URL}/api/admin/users`, {
-        method: "POST",
-        headers: headers(token),
-        body: JSON.stringify(createUserForm),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.error || "Gagal membuat akun.");
-      }
-
-      setSuccessMessage(data.message || "Akun berhasil dibuat.");
+      const data = await api.createStudentAccount(token, createUserForm);
+      showToast(data.message || "Akun siswa berhasil dibuat.", "success");
       setCreateUserForm({
         name: "",
         username: "",
@@ -476,7 +419,7 @@ function App() {
       });
       await Promise.all([fetchAccountRequests(), fetchStudentAccounts()]);
     } catch (err) {
-      setError(err.message || "Gagal membuat akun.");
+      showToast(err.message || "Gagal membuat akun.", "error");
     } finally {
       setCreatingUser(false);
     }
@@ -499,26 +442,14 @@ function App() {
     const confirmed = window.confirm(
       "Hapus permohonan akun ini dari daftar? Tindakan ini tidak bisa dibatalkan."
     );
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     try {
-      setError("");
-      setSuccessMessage("");
-      const res = await fetch(`${API_URL}/api/account-requests/${id}`, {
-        method: "DELETE",
-        headers: headers(token),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.error || "Gagal menghapus permohonan akun.");
-      }
-
+      await api.deleteAccountRequest(token, id);
       setAccountRequests((prev) => prev.filter((request) => request.id !== id));
-      setSuccessMessage("Permohonan akun berhasil dihapus.");
+      showToast("Permohonan akun berhasil dihapus.", "success");
     } catch (err) {
-      setError(err.message || "Gagal menghapus permohonan akun.");
+      showToast(err.message || "Gagal menghapus permohonan akun.", "error");
     }
   };
 
@@ -526,26 +457,14 @@ function App() {
     const confirmed = window.confirm(
       "Hapus akun siswa ini? Siswa tidak akan bisa login lagi."
     );
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     try {
-      setError("");
-      setSuccessMessage("");
-      const res = await fetch(`${API_URL}/api/admin/users/${id}`, {
-        method: "DELETE",
-        headers: headers(token),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.error || "Gagal menghapus akun siswa.");
-      }
-
+      const data = await api.deleteStudentAccount(token, id);
       setStudentAccounts((prev) => prev.filter((account) => account.id !== id));
-      setSuccessMessage(data.message || "Akun siswa berhasil dihapus.");
+      showToast(data.message || "Akun siswa berhasil dihapus.", "success");
     } catch (err) {
-      setError(err.message || "Gagal menghapus akun siswa.");
+      showToast(err.message || "Gagal menghapus akun siswa.", "error");
     }
   };
 
@@ -574,6 +493,9 @@ function App() {
     setChatEvidence(null);
     setChatSubmitting(false);
     setChatEvidenceInputKey((prev) => prev + 1);
+    setChatAttachment(null);
+    setChatUploadedEvidence(null);
+    setChatAttachUploading(false);
   };
 
   const filtered = useMemo(() => {
@@ -668,6 +590,11 @@ function App() {
         chatSubmitting={chatSubmitting}
         handleChatSend={handleChatSend}
         handleChatSubmitComplaint={handleChatSubmitComplaint}
+        chatAttachment={chatAttachment}
+        chatUploadedEvidence={chatUploadedEvidence}
+        chatAttachUploading={chatAttachUploading}
+        handleChatAttach={handleChatAttach}
+        handleChatRemoveAttachment={handleChatRemoveAttachment}
       />
     );
   }
