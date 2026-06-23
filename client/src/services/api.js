@@ -20,6 +20,52 @@ const getHeaders = (token, isFormData = false) => {
   return headers;
 };
 
+const CHATBOT_REQUEST_TIMEOUT_MS = 45000;
+const CHATBOT_UPLOAD_TIMEOUT_MS = 30000;
+
+const fetchWithTimeout = async (url, options = {}, timeoutMs = CHATBOT_REQUEST_TIMEOUT_MS) => {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      const timeoutError = new Error("Layanan asisten sedang sibuk, silakan coba beberapa saat lagi.");
+      timeoutError.code = "REQUEST_TIMEOUT";
+      throw timeoutError;
+    }
+
+    const networkError = new Error("Koneksi ke asisten gagal. Periksa koneksi internet lalu coba lagi.");
+    networkError.cause = error;
+    throw networkError;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+};
+
+const parseJsonSafely = async (res) => {
+  try {
+    return await res.json();
+  } catch {
+    return {};
+  }
+};
+
+const requestChatbotJson = async (url, options, timeoutMs, fallbackMessage) => {
+  const res = await fetchWithTimeout(url, options, timeoutMs);
+  const data = await parseJsonSafely(res);
+
+  if (!res.ok) {
+    throw new Error(data.message || data.error || fallbackMessage);
+  }
+
+  return data;
+};
+
 export const api = {
   getMe: async (token) => {
     const res = await fetch(`${API_BASE_URL}/api/me`, {
@@ -160,37 +206,50 @@ export const api = {
     if (evidenceData) {
       body.evidenceData = evidenceData;
     }
-    const res = await fetch(`${API_BASE_URL}/api/chatbot/message`, {
-      method: "POST",
-      headers: getHeaders(token),
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || data.message || "Gagal menghubungi asisten pengaduan");
+
+    const data = await requestChatbotJson(
+      `${API_BASE_URL}/api/chatbot/message`,
+      {
+        method: "POST",
+        headers: getHeaders(token),
+        body: JSON.stringify(body),
+      },
+      CHATBOT_REQUEST_TIMEOUT_MS,
+      "Layanan asisten sedang sibuk, silakan coba beberapa saat lagi."
+    );
+
+    if (!data || (!data.message && data.status !== "completed")) {
+      throw new Error("Format respons asisten tidak sesuai. Silakan coba lagi.");
+    }
+
     return data;
   },
 
   submitChatbotComplaint: async (token, formData) => {
-    const res = await fetch(`${API_BASE_URL}/api/chatbot/submit`, {
-      method: "POST",
-      headers: getHeaders(token, true),
-      body: formData,
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Gagal menyimpan laporan");
-    return data;
+    return requestChatbotJson(
+      `${API_BASE_URL}/api/chatbot/submit`,
+      {
+        method: "POST",
+        headers: getHeaders(token, true),
+        body: formData,
+      },
+      CHATBOT_UPLOAD_TIMEOUT_MS,
+      "Gagal menyimpan laporan. Silakan coba lagi."
+    );
   },
 
   uploadChatEvidence: async (token, file) => {
     const formData = new FormData();
     formData.append("evidence", file);
-    const res = await fetch(`${API_BASE_URL}/api/chatbot/upload-evidence`, {
-      method: "POST",
-      headers: getHeaders(token, true),
-      body: formData,
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Gagal mengupload bukti");
-    return data;
+    return requestChatbotJson(
+      `${API_BASE_URL}/api/chatbot/upload-evidence`,
+      {
+        method: "POST",
+        headers: getHeaders(token, true),
+        body: formData,
+      },
+      CHATBOT_UPLOAD_TIMEOUT_MS,
+      "Gagal mengupload bukti. Silakan coba lagi."
+    );
   },
 };

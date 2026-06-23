@@ -221,14 +221,14 @@ function App() {
         setChatFinalData(result?.data?.data || result?.data || null);
       }
     } catch (err) {
+      const assistantErrorMessage =
+        err.message || "Layanan asisten sedang sibuk, silakan coba beberapa saat lagi.";
+      showToast(assistantErrorMessage, "error");
       setChatMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content:
-            String(err.message || "").toLowerCase().includes("chatbot")
-              ? "Asisten pengaduan belum siap. Coba lagi beberapa saat."
-              : err.message || "Gagal menghubungi asisten pengaduan.",
+          content: assistantErrorMessage,
         },
       ]);
     } finally {

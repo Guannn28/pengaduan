@@ -8,6 +8,11 @@ const { normalizeComplaint } = require("../utils/serializers");
 
 const router = express.Router();
 
+const CHATBOT_FALLBACK_MESSAGE = "Layanan asisten sedang sibuk, silakan coba beberapa saat lagi.";
+const CHATBOT_CONNECTION_MESSAGE = "Koneksi ke asisten gagal. Periksa koneksi internet lalu coba lagi.";
+const CHATBOT_INVALID_RESPONSE_MESSAGE = "Format respons asisten tidak sesuai. Silakan coba lagi.";
+const DEFAULT_N8N_TIMEOUT_MS = 45000;
+
 const categoryMap = {
   perundungan_bullying: "Perundungan & Bullying",
   kekerasan_fisik: "Kekerasan Fisik",
@@ -19,6 +24,108 @@ const categoryMap = {
   pelanggaran_privasi: "Pelanggaran Privasi",
   fasilitas_keamanan: "Fasilitas & Keamanan",
   lainnya: "Lainnya",
+};
+
+const getN8nTimeoutMs = () => {
+  const value = Number(process.env.N8N_CHATBOT_TIMEOUT_MS);
+  return Number.isFinite(value) && value > 0 ? value : DEFAULT_N8N_TIMEOUT_MS;
+};
+
+const createChatbotError = (code, message, cause) => {
+  const error = new Error(message);
+  error.code = code;
+  if (cause) {
+    error.cause = cause;
+  }
+  return error;
+};
+
+const parseJsonLikePayload = (value) => {
+  if (value === null || value === undefined) {
+    throw createChatbotError("CHATBOT_INVALID_RESPONSE", CHATBOT_INVALID_RESPONSE_MESSAGE);
+  }
+
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const cleaned = value.trim();
+  if (!cleaned) {
+    throw createChatbotError("CHATBOT_INVALID_RESPONSE", CHATBOT_INVALID_RESPONSE_MESSAGE);
+  }
+
+  const unwrapped =
+    cleaned.startsWith("'") && cleaned.endsWith("'")
+      ? cleaned.slice(1, -1)
+      : cleaned;
+
+  try {
+    return JSON.parse(unwrapped);
+  } catch (_error) {
+    return { reply: unwrapped };
+  }
+};
+
+const normalizeN8nResponse = (payload) => {
+  if (Array.isArray(payload)) {
+    if (payload.length === 0) {
+      throw createChatbotError("CHATBOT_INVALID_RESPONSE", CHATBOT_INVALID_RESPONSE_MESSAGE);
+    }
+    return normalizeN8nResponse(payload[0]);
+  }
+
+  if (typeof payload === "string") {
+    return normalizeN8nResponse(parseJsonLikePayload(payload));
+  }
+
+  if (!payload || typeof payload !== "object") {
+    throw createChatbotError("CHATBOT_INVALID_RESPONSE", CHATBOT_INVALID_RESPONSE_MESSAGE);
+  }
+
+  if (payload.output !== undefined) {
+    return normalizeN8nResponse(parseJsonLikePayload(payload.output));
+  }
+
+  return payload;
+};
+
+const parseN8nResponseText = (rawText) => normalizeN8nResponse(parseJsonLikePayload(rawText));
+
+const getAssistantReply = (responseData) => {
+  const reply = responseData?.reply || responseData?.message || responseData?.response || responseData?.text;
+  if (typeof reply === "string" && reply.trim()) {
+    return reply.trim();
+  }
+
+  if (responseData?.status === "completed" && responseData?.data) {
+    return "Laporan sudah tersusun. Silakan periksa ringkasan sebelum dikirim.";
+  }
+
+  throw createChatbotError("CHATBOT_INVALID_RESPONSE", CHATBOT_INVALID_RESPONSE_MESSAGE);
+};
+
+const fetchN8nWebhook = async (n8nUrl, payload) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), getN8nTimeoutMs());
+
+  try {
+    return await fetch(n8nUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw createChatbotError("CHATBOT_TIMEOUT", CHATBOT_FALLBACK_MESSAGE, error);
+    }
+
+    throw createChatbotError("CHATBOT_NETWORK", CHATBOT_CONNECTION_MESSAGE, error);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 };
 
 const parseFinalData = (rawFinalData) => {
@@ -45,7 +152,7 @@ router.post("/message", auth(["student"]), async (req, res) => {
     const n8nUrl = process.env.N8N_CHATBOT_WEBHOOK_URL;
     if (!n8nUrl) {
       console.error("[Chatbot Error] N8N_CHATBOT_WEBHOOK_URL tidak dikonfigurasi di environment variables.");
-      return res.status(500).json({ message: "Konfigurasi webhook chatbot tidak ditemukan" });
+      return res.status(503).json({ success: false, message: CHATBOT_FALLBACK_MESSAGE });
     }
 
     const payload = {
@@ -53,37 +160,16 @@ router.post("/message", auth(["student"]), async (req, res) => {
       history: history || [],
     };
 
-    const n8nResponse = await fetch(n8nUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+    const n8nResponse = await fetchN8nWebhook(n8nUrl, payload);
 
     if (!n8nResponse.ok) {
       console.error(`[Chatbot Error] Request gagal dengan status ${n8nResponse.status}.`);
-      throw new Error(`n8n webhook merespons dengan status: ${n8nResponse.status}`);
+      throw createChatbotError("CHATBOT_UPSTREAM_HTTP", CHATBOT_FALLBACK_MESSAGE);
     }
 
     const rawText = await n8nResponse.text();
-    let responseData;
-    try {
-      let cleanedText = rawText.trim();
-      if (cleanedText.startsWith("'") && cleanedText.endsWith("'")) {
-        cleanedText = cleanedText.slice(1, -1);
-      }
-      let parsed = JSON.parse(cleanedText);
-      
-      if (parsed.output && typeof parsed.output === "string") {
-        responseData = JSON.parse(parsed.output);
-      } else {
-        responseData = parsed;
-      }
-    } catch (e) {
-      console.error("[Chatbot Error] Gagal parse JSON dari n8n.");
-      return res.status(500).json({ message: "Maaf, format data dari asisten AI sedang bermasalah." });
-    }
+    const responseData = parseN8nResponseText(rawText);
+    const assistantReply = getAssistantReply(responseData);
 
     if (responseData.status === "completed" && responseData.data) {
       try {
@@ -149,10 +235,27 @@ router.post("/message", auth(["student"]), async (req, res) => {
       }
     }
 
-    return res.status(200).json({ message: responseData.reply });
+    return res.status(200).json({ success: true, message: assistantReply });
   } catch (error) {
-    console.error("[Chatbot Error] Message processing error:", error.message || error);
-    return res.status(500).json({ message: "Response chatbot gagal diproses" });
+    console.error("[Chatbot Error] Message processing error:", error.code || error.message || error);
+
+    if (error.code === "CHATBOT_TIMEOUT") {
+      return res.status(504).json({ success: false, message: CHATBOT_FALLBACK_MESSAGE });
+    }
+
+    if (error.code === "CHATBOT_NETWORK") {
+      return res.status(502).json({ success: false, message: CHATBOT_CONNECTION_MESSAGE });
+    }
+
+    if (error.code === "CHATBOT_INVALID_RESPONSE") {
+      return res.status(502).json({ success: false, message: CHATBOT_INVALID_RESPONSE_MESSAGE });
+    }
+
+    if (error.code === "CHATBOT_UPSTREAM_HTTP") {
+      return res.status(502).json({ success: false, message: CHATBOT_FALLBACK_MESSAGE });
+    }
+
+    return res.status(500).json({ success: false, message: CHATBOT_FALLBACK_MESSAGE });
   }
 });
 
