@@ -1,19 +1,10 @@
 import {
+  complaintDetailLabels,
   formatDate,
   getStatusLabel,
   getUrgencyBadgeClass,
   getUrgencyValue,
 } from "../../utils/formatters";
-
-const detailFieldLabels = [
-  ["kronologi", "Kronologi"],
-  ["lokasi", "Lokasi"],
-  ["waktu", "Waktu"],
-  ["pihakTerlibat", "Pihak Terlibat"],
-  ["saksi", "Saksi"],
-  ["buktiTambahan", "Bukti Tambahan"],
-  ["harapanPelapor", "Harapan Pelapor"],
-];
 
 const getParsedFieldValue = (parsedFields, key) =>
   parsedFields.find((field) => field.key === key)?.value || "Tidak ada";
@@ -182,7 +173,7 @@ const StudentMessage = ({ complaint, parsedFields }) => {
 
   return (
     <>
-      {detailFieldLabels.map(([key, label]) => (
+      {complaintDetailLabels.map(([key, label]) => (
         <div key={key} className="student-complaint-detail-item">
           <span>{label}</span>
           <strong>{getParsedFieldValue(parsedFields, key)}</strong>

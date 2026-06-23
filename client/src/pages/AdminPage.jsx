@@ -5,11 +5,11 @@ import AdminSidebar from "../components/admin/AdminSidebar";
 import ComplaintsSection from "../components/admin/ComplaintsSection";
 import ComplaintDetailModal from "../components/shared/ComplaintDetailModal";
 import StudentAccountsSection from "../components/admin/StudentAccountsSection";
+import { adminNavItems } from "../components/admin/adminUtils";
 import {
-  adminNavItems,
   complaintDetailLabels,
-  splitComplaintMessage,
-} from "../components/admin/adminUtils";
+  parseComplaintMessage,
+} from "../utils/formatters";
 
 const AdminPage = ({
   user,
@@ -71,7 +71,7 @@ const AdminPage = ({
       return null;
     }
 
-    const parsed = splitComplaintMessage(selectedComplaint.message);
+    const parsed = parseComplaintMessage(selectedComplaint.message);
     const parsedFields = parsed.fields.length
       ? parsed.fields
       : complaintDetailLabels.map(([key, label]) => ({ key, label, value: "" }));

@@ -4,7 +4,7 @@ import ComplaintDetailModal from "../components/shared/ComplaintDetailModal";
 import StudentComplaintList from "../components/student/StudentComplaintList";
 import StudentHeader from "../components/student/StudentHeader";
 import StudentOverviewRail from "../components/student/StudentOverviewRail";
-import { parseComplaintMessage } from "../components/student/studentUtils";
+import { parseComplaintMessage } from "../utils/formatters";
 
 const StudentPage = ({
   user,
