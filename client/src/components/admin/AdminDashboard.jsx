@@ -1,5 +1,4 @@
 import { formatDate, getStatusLabel } from "../../utils/formatters";
-import DatasetInsightSection from "./DatasetInsightSection";
 import {
   BarChart2,
   Clock,
@@ -34,11 +33,6 @@ const AdminDashboard = ({
   setAdminView,
   setSelectedComplaint,
   handleUseAccountRequest,
-  localizedInsight,
-  datasetInsightLoading,
-  datasetInsightError,
-  showDatasetInsightDetail,
-  setShowDatasetInsightDetail,
 }) => (
   <>
     <section className="admin-stat-grid">
@@ -180,13 +174,6 @@ const AdminDashboard = ({
         )}
       </div>
     </section>
-    <DatasetInsightSection
-      localizedInsight={localizedInsight}
-      datasetInsightLoading={datasetInsightLoading}
-      datasetInsightError={datasetInsightError}
-      showDatasetInsightDetail={showDatasetInsightDetail}
-      setShowDatasetInsightDetail={setShowDatasetInsightDetail}
-    />
   </>
 );
 

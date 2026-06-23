@@ -127,15 +127,6 @@ export const api = {
     return data;
   },
 
-  getDatasetInsight: async (token) => {
-    const res = await fetch(`${API_URL}/api/dataset/insight`, {
-      headers: getHeaders(token),
-    });
-    const data = await res.json();
-    if (!res.ok || !data.success) throw new Error(data.message || "Gagal memuat insight dataset");
-    return data.data;
-  },
-
   exportComplaintsExcel: async (token) => {
     const res = await fetch(`${API_URL}/api/complaints/export/excel`, {
       headers: { Authorization: `Bearer ${token}` },

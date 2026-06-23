@@ -41,9 +41,6 @@ function App() {
   const [accountRequests, setAccountRequests] = useState([]);
   const [studentAccounts, setStudentAccounts] = useState([]);
   const [studentAccountsLoading, setStudentAccountsLoading] = useState(false);
-  const [datasetInsight, setDatasetInsight] = useState(null);
-  const [datasetInsightLoading, setDatasetInsightLoading] = useState(false);
-  const [datasetInsightError, setDatasetInsightError] = useState("");
   const [chatMessages, setChatMessages] = useState(createInitialChatMessages);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
@@ -132,27 +129,6 @@ function App() {
     }
   }, [token, showToast]);
 
-  const fetchDatasetInsight = useCallback(async (tkn = token) => {
-    if (!tkn) {
-      setDatasetInsight(null);
-      setDatasetInsightLoading(false);
-      setDatasetInsightError("");
-      return;
-    }
-
-    try {
-      setDatasetInsightLoading(true);
-      setDatasetInsightError("");
-      const data = await api.getDatasetInsight(tkn);
-      setDatasetInsight(data || null);
-    } catch {
-      setDatasetInsight(null);
-      setDatasetInsightError("Gagal memuat insight dataset.");
-    } finally {
-      setDatasetInsightLoading(false);
-    }
-  }, [token]);
-
   const fetchMe = useCallback(async (tkn) => {
     try {
       const data = await api.getMe(tkn);
@@ -163,15 +139,11 @@ function App() {
         await Promise.all([
           fetchAccountRequests(tkn),
           fetchStudentAccounts(tkn),
-          fetchDatasetInsight(tkn),
         ]);
       } else {
         setAccountRequests([]);
         setStudentAccounts([]);
         setStudentAccountsLoading(false);
-        setDatasetInsight(null);
-        setDatasetInsightError("");
-        setDatasetInsightLoading(false);
       }
     } catch {
       setUser(null);
@@ -179,7 +151,7 @@ function App() {
       localStorage.removeItem("complain_token");
       setLoading(false);
     }
-  }, [fetchAccountRequests, fetchComplaints, fetchDatasetInsight, fetchStudentAccounts]);
+  }, [fetchAccountRequests, fetchComplaints, fetchStudentAccounts]);
 
   useEffect(() => {
     if (token) {
@@ -388,7 +360,6 @@ function App() {
       if (data.user?.role === "admin") {
         fetchAccountRequests(data.token);
         fetchStudentAccounts(data.token);
-        fetchDatasetInsight(data.token);
       }
     } catch (err) {
       setError(err.message || "Login/daftar gagal.");
@@ -476,9 +447,6 @@ function App() {
     setAccountRequests([]);
     setStudentAccounts([]);
     setStudentAccountsLoading(false);
-    setDatasetInsight(null);
-    setDatasetInsightLoading(false);
-    setDatasetInsightError("");
     setSuccessMessage("");
     setChatMessages(createInitialChatMessages());
     setChatInput("");
@@ -544,9 +512,6 @@ function App() {
         studentAccountsLoading={studentAccountsLoading}
         fetchStudentAccounts={fetchStudentAccounts}
         handleDeleteStudentAccount={handleDeleteStudentAccount}
-        datasetInsight={datasetInsight}
-        datasetInsightLoading={datasetInsightLoading}
-        datasetInsightError={datasetInsightError}
         handleExportComplaints={handleExportComplaints}
         createUserForm={createUserForm}
         setCreateUserForm={setCreateUserForm}

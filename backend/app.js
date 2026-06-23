@@ -7,7 +7,6 @@ const { distPath, uploadsPath } = require("./paths");
 const authRoutes = require("./routes/authRoutes");
 const complaintRoutes = require("./routes/complaintRoutes");
 const chatbotRoutes = require("./routes/chatbotRoutes");
-const datasetRoutes = require("./routes/datasetRoutes");
 const { errorHandler } = require("./middleware/errorHandler");
 
 const app = express();
@@ -25,7 +24,6 @@ app.use("/uploads", express.static(uploadsPath));
 app.use("/api", authRoutes);
 app.use("/api", complaintRoutes);
 app.use("/api/chatbot", chatbotRoutes);
-app.use("/api/dataset", datasetRoutes);
 
 app.use(errorHandler);
 

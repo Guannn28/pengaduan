@@ -4,12 +4,10 @@ import AdminDashboard from "../components/admin/AdminDashboard";
 import AdminSidebar from "../components/admin/AdminSidebar";
 import ComplaintsSection from "../components/admin/ComplaintsSection";
 import ComplaintDetailModal from "../components/admin/ComplaintDetailModal";
-import DatasetInsightSection from "../components/admin/DatasetInsightSection";
 import StudentAccountsSection from "../components/admin/StudentAccountsSection";
 import {
   adminNavItems,
   complaintDetailLabels,
-  normalizeDatasetItems,
   splitComplaintMessage,
 } from "../components/admin/adminUtils";
 
@@ -36,9 +34,6 @@ const AdminPage = ({
   studentAccountsLoading,
   fetchStudentAccounts,
   handleDeleteStudentAccount,
-  datasetInsight,
-  datasetInsightLoading,
-  datasetInsightError,
   handleExportComplaints,
   createUserForm,
   setCreateUserForm,
@@ -50,7 +45,6 @@ const AdminPage = ({
   successMessage,
 }) => {
   const [selectedComplaint, setSelectedComplaint] = useState(null);
-  const [showDatasetInsightDetail, setShowDatasetInsightDetail] = useState(false);
 
   const pendingAccountRequests = accountRequests.filter((item) => item.status === "pending");
 
@@ -71,18 +65,6 @@ const AdminPage = ({
       rejected: byStatus.rejected || 0,
     };
   }, [complaints]);
-
-  const localizedInsight = datasetInsight
-    ? {
-        ...datasetInsight,
-        distributions: Object.fromEntries(
-          Object.entries(datasetInsight.distributions || {}).map(([key, items]) => [
-            key,
-            normalizeDatasetItems(items, key),
-          ])
-        ),
-      }
-    : null;
 
   const selectedComplaintDetail = useMemo(() => {
     if (!selectedComplaint) {
@@ -113,17 +95,6 @@ const AdminPage = ({
   const currentView = adminNavItems.find((item) => item.value === adminView) || adminNavItems[0];
   const recentComplaints = complaints.slice(0, 5);
 
-  const datasetInsightSection = (
-    <DatasetInsightSection
-      localizedInsight={localizedInsight}
-      datasetInsightLoading={datasetInsightLoading}
-      datasetInsightError={datasetInsightError}
-      showDatasetInsightDetail={showDatasetInsightDetail}
-      setShowDatasetInsightDetail={setShowDatasetInsightDetail}
-      showAllCharts={adminView === "insight"}
-    />
-  );
-
   const renderView = () => {
     if (adminView === "dashboard") {
       return (
@@ -137,11 +108,6 @@ const AdminPage = ({
           setAdminView={setAdminView}
           setSelectedComplaint={setSelectedComplaint}
           handleUseAccountRequest={handleUseAccountRequest}
-          localizedInsight={localizedInsight}
-          datasetInsightLoading={datasetInsightLoading}
-          datasetInsightError={datasetInsightError}
-          showDatasetInsightDetail={showDatasetInsightDetail}
-          setShowDatasetInsightDetail={setShowDatasetInsightDetail}
         />
       );
     }
@@ -197,10 +163,6 @@ const AdminPage = ({
           successMessage={successMessage}
         />
       );
-    }
-
-    if (adminView === "insight") {
-      return datasetInsightSection;
     }
 
     return null;
