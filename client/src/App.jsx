@@ -4,10 +4,8 @@ import StudentPage from "./pages/StudentPage";
 import AdminPage from "./pages/AdminPage";
 import { resolveMediaUrl as resolveMediaUrlValue } from "./utils/formatters";
 import "./App.css";
-import { api } from "./services/api";
+import { API_BASE_URL, api } from "./services/api";
 import { useToast } from "./context/useToast";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 const statusOptions = [
   { value: "submitted", label: "Diajukan" },
@@ -32,7 +30,7 @@ const createInitialChatMessages = () => [
 ];
 
 const resolveMediaUrl = (value) => {
-  return resolveMediaUrlValue(value, API_URL);
+  return resolveMediaUrlValue(value, API_BASE_URL);
 };
 
 function App() {

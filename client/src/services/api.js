@@ -1,4 +1,13 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const DEVELOPMENT_API_URL = "http://localhost:4000";
+
+const normalizeApiBaseUrl = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/\/+$/, "");
+
+export const API_BASE_URL =
+  normalizeApiBaseUrl(import.meta.env.VITE_API_URL) ||
+  (import.meta.env.DEV ? DEVELOPMENT_API_URL : "");
 
 const getHeaders = (token, isFormData = false) => {
   const headers = {};
@@ -13,7 +22,7 @@ const getHeaders = (token, isFormData = false) => {
 
 export const api = {
   getMe: async (token) => {
-    const res = await fetch(`${API_URL}/api/me`, {
+    const res = await fetch(`${API_BASE_URL}/api/me`, {
       headers: getHeaders(token),
     });
     if (!res.ok) throw new Error("Gagal mengambil data user");
@@ -21,7 +30,7 @@ export const api = {
   },
 
   login: async (username, password) => {
-    const res = await fetch(`${API_URL}/api/login`, {
+    const res = await fetch(`${API_BASE_URL}/api/login`, {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify({ username, password }),
@@ -32,7 +41,7 @@ export const api = {
   },
 
   register: async (formData) => {
-    const res = await fetch(`${API_URL}/api/register`, {
+    const res = await fetch(`${API_BASE_URL}/api/register`, {
       method: "POST",
       body: formData,
     });
@@ -42,7 +51,7 @@ export const api = {
   },
 
   getComplaints: async (token) => {
-    const res = await fetch(`${API_URL}/api/complaints`, {
+    const res = await fetch(`${API_BASE_URL}/api/complaints`, {
       headers: getHeaders(token),
     });
     if (!res.ok) throw new Error("Gagal mengambil data pengaduan");
@@ -50,7 +59,7 @@ export const api = {
   },
 
   updateComplaintStatus: async (token, id, status) => {
-    const res = await fetch(`${API_URL}/api/complaints/${id}/status`, {
+    const res = await fetch(`${API_BASE_URL}/api/complaints/${id}/status`, {
       method: "PATCH",
       headers: getHeaders(token),
       body: JSON.stringify({ status }),
@@ -60,7 +69,7 @@ export const api = {
   },
 
   deleteComplaint: async (token, id) => {
-    const res = await fetch(`${API_URL}/api/complaints/${id}`, {
+    const res = await fetch(`${API_BASE_URL}/api/complaints/${id}`, {
       method: "DELETE",
       headers: getHeaders(token),
     });
@@ -69,7 +78,7 @@ export const api = {
   },
 
   downloadEvidence: async (token, id) => {
-    const res = await fetch(`${API_URL}/api/complaints/${id}/evidence/download`, {
+    const res = await fetch(`${API_BASE_URL}/api/complaints/${id}/evidence/download`, {
       headers: getHeaders(token),
     });
     if (!res.ok) {
@@ -80,7 +89,7 @@ export const api = {
   },
 
   getAccountRequests: async (token) => {
-    const res = await fetch(`${API_URL}/api/account-requests`, {
+    const res = await fetch(`${API_BASE_URL}/api/account-requests`, {
       headers: getHeaders(token),
     });
     if (!res.ok) throw new Error("Gagal memuat permohonan akun");
@@ -88,7 +97,7 @@ export const api = {
   },
 
   deleteAccountRequest: async (token, id) => {
-    const res = await fetch(`${API_URL}/api/account-requests/${id}`, {
+    const res = await fetch(`${API_BASE_URL}/api/account-requests/${id}`, {
       method: "DELETE",
       headers: getHeaders(token),
     });
@@ -98,7 +107,7 @@ export const api = {
   },
 
   getStudentAccounts: async (token) => {
-    const res = await fetch(`${API_URL}/api/admin/users`, {
+    const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
       headers: getHeaders(token),
     });
     const data = await res.json();
@@ -107,7 +116,7 @@ export const api = {
   },
 
   createStudentAccount: async (token, userData) => {
-    const res = await fetch(`${API_URL}/api/admin/users`, {
+    const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
       method: "POST",
       headers: getHeaders(token),
       body: JSON.stringify(userData),
@@ -118,7 +127,7 @@ export const api = {
   },
 
   deleteStudentAccount: async (token, id) => {
-    const res = await fetch(`${API_URL}/api/admin/users/${id}`, {
+    const res = await fetch(`${API_BASE_URL}/api/admin/users/${id}`, {
       method: "DELETE",
       headers: getHeaders(token),
     });
@@ -128,7 +137,7 @@ export const api = {
   },
 
   exportComplaintsExcel: async (token) => {
-    const res = await fetch(`${API_URL}/api/complaints/export/excel`, {
+    const res = await fetch(`${API_BASE_URL}/api/complaints/export/excel`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) {
@@ -151,7 +160,7 @@ export const api = {
     if (evidenceData) {
       body.evidenceData = evidenceData;
     }
-    const res = await fetch(`${API_URL}/api/chatbot/message`, {
+    const res = await fetch(`${API_BASE_URL}/api/chatbot/message`, {
       method: "POST",
       headers: getHeaders(token),
       body: JSON.stringify(body),
@@ -162,7 +171,7 @@ export const api = {
   },
 
   submitChatbotComplaint: async (token, formData) => {
-    const res = await fetch(`${API_URL}/api/chatbot/submit`, {
+    const res = await fetch(`${API_BASE_URL}/api/chatbot/submit`, {
       method: "POST",
       headers: getHeaders(token, true),
       body: formData,
@@ -175,7 +184,7 @@ export const api = {
   uploadChatEvidence: async (token, file) => {
     const formData = new FormData();
     formData.append("evidence", file);
-    const res = await fetch(`${API_URL}/api/chatbot/upload-evidence`, {
+    const res = await fetch(`${API_BASE_URL}/api/chatbot/upload-evidence`, {
       method: "POST",
       headers: getHeaders(token, true),
       body: formData,

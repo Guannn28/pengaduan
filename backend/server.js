@@ -10,12 +10,10 @@ process.on("unhandledRejection", (reason) => {
   console.error("Unhandled rejection:", reason);
 });
 
-const HOST = "0.0.0.0";
-const PORT = process.env.PORT || 8080;
 const DB_RETRY_MS = 10000;
 
-app.listen(PORT, HOST, () => {
-  console.log(`Server running on ${HOST}:${PORT}`);
+app.listen(env.PORT, env.HOST, () => {
+  console.log(`Server running on ${env.HOST}:${env.PORT}`);
 });
 
 const connectToDb = async () => {

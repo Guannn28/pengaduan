@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 
 const { distPath, uploadsPath } = require("./paths");
+const env = require("./config/env");
 const authRoutes = require("./routes/authRoutes");
 const complaintRoutes = require("./routes/complaintRoutes");
 const chatbotRoutes = require("./routes/chatbotRoutes");
@@ -13,7 +14,13 @@ const app = express();
 
 app.use(
   cors({
-    origin: true,
+    origin(origin, callback) {
+      if (env.isAllowedOrigin(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Origin tidak diizinkan oleh CORS."));
+    },
     credentials: true,
   })
 );
