@@ -3,7 +3,7 @@ import AccountRequestsSection from "../components/admin/AccountRequestsSection";
 import AdminDashboard from "../components/admin/AdminDashboard";
 import AdminSidebar from "../components/admin/AdminSidebar";
 import ComplaintsSection from "../components/admin/ComplaintsSection";
-import ComplaintDetailModal from "../components/admin/ComplaintDetailModal";
+import ComplaintDetailModal from "../components/shared/ComplaintDetailModal";
 import StudentAccountsSection from "../components/admin/StudentAccountsSection";
 import {
   adminNavItems,
@@ -231,6 +231,7 @@ const AdminPage = ({
         </main>
 
         <ComplaintDetailModal
+          role="admin"
           selectedComplaintDetail={selectedComplaintDetail}
           statusOptions={statusOptions}
           statusColor={statusColor}

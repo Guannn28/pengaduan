@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import AssistantComplaintCard from "../components/student/AssistantComplaintCard";
-import StudentComplaintDetailModal from "../components/student/StudentComplaintDetailModal";
+import ComplaintDetailModal from "../components/shared/ComplaintDetailModal";
 import StudentComplaintList from "../components/student/StudentComplaintList";
 import StudentHeader from "../components/student/StudentHeader";
 import StudentOverviewRail from "../components/student/StudentOverviewRail";
@@ -124,7 +124,8 @@ const StudentPage = ({
           </section>
         </main>
 
-        <StudentComplaintDetailModal
+        <ComplaintDetailModal
+          role="student"
           selectedComplaintDetail={selectedComplaintDetail}
           statusOptions={statusOptions}
           statusColor={statusColor}
