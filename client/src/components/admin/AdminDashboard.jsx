@@ -9,30 +9,13 @@ import {
   Users,
   Inbox,
   ClipboardList,
-  PartyPopper,
 } from "lucide-react";
-
-/**
- * AdminStatCard — Kartu statistik cepat untuk Admin Dashboard.
- *
- * Setiap kartu menampilkan satu metrik utama dengan:
- * - Ikon Lucide React di kanan atas
- * - Angka besar di tengah
- * - Label dan deskripsi singkat
- * - Garis warna di sisi kiri (via CSS `::after`) sesuai `tone`
- *
- * @param {string}  label   - Label singkat di atas angka
- * @param {number}  value   - Nilai/angka yang ditampilkan
- * @param {string}  helper  - Deskripsi singkat di bawah angka
- * @param {React.ReactNode} icon - Komponen ikon Lucide
- * @param {string}  tone    - Tema warna kartu
- */
 const AdminStatCard = ({ label, value, helper, icon, tone = "default" }) => (
   <div className={`admin-stat-card ${tone}`}>
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+    <div className="admin-stat-card-head">
       <span>{label}</span>
       {icon && (
-        <span style={{ opacity: 0.5, color: "var(--text-secondary)" }}>
+        <span className="admin-stat-icon">
           {icon}
         </span>
       )}
@@ -41,15 +24,6 @@ const AdminStatCard = ({ label, value, helper, icon, tone = "default" }) => (
     {helper && <p>{helper}</p>}
   </div>
 );
-
-/**
- * AdminDashboard — Halaman ringkasan utama panel Admin.
- *
- * Menampilkan:
- * 1. Enam kartu statistik cepat berdasarkan status pengaduan
- * 2. Dua kolom: Pengaduan Terbaru dan Tugas Pengajuan Akun
- * 3. Bagian Dataset Insight dari file Bullying_2018.csv
- */
 const AdminDashboard = ({
   complaintStats,
   pendingAccountRequests,
@@ -67,7 +41,6 @@ const AdminDashboard = ({
   setShowDatasetInsightDetail,
 }) => (
   <>
-    {/* ——— Statistik Cepat ——— */}
     <section className="admin-stat-grid">
       <AdminStatCard
         label="Total Pengaduan"
@@ -111,10 +84,7 @@ const AdminDashboard = ({
         tone="student"
       />
     </section>
-
-    {/* ——— Dua kolom: Pengaduan Terbaru & Tugas Akun ——— */}
     <section className="dashboard-overview-grid">
-      {/* Pengaduan Terbaru */}
       <div className="card dashboard-list-card">
         <div className="card-head">
           <div>
@@ -127,7 +97,7 @@ const AdminDashboard = ({
         </div>
 
         {recentComplaints.length === 0 ? (
-          <div className="empty-state" style={{ padding: "32px 24px" }}>
+          <div className="empty-state compact-empty-state">
             <div className="empty-state-icon">
               <Inbox size={48} strokeWidth={1} color="var(--text-muted)" />
             </div>
@@ -138,7 +108,7 @@ const AdminDashboard = ({
           <div className="dashboard-list">
             {recentComplaints.map((complaint) => (
               <div key={complaint.id} className="dashboard-list-item">
-                <div style={{ minWidth: 0 }}>
+                <div className="dashboard-list-content">
                   <strong>{complaint.category || "Pengaduan"}</strong>
                   <p className="muted small">
                     {complaint.name || "Pelapor"} &middot; {formatDate(complaint.createdAt)}
@@ -161,8 +131,6 @@ const AdminDashboard = ({
           </div>
         )}
       </div>
-
-      {/* Tugas Pengajuan Akun */}
       <div className="card dashboard-list-card">
         <div className="card-head">
           <div>
@@ -179,7 +147,7 @@ const AdminDashboard = ({
         </div>
 
         {pendingAccountRequests.length === 0 ? (
-          <div className="empty-state" style={{ padding: "32px 24px" }}>
+          <div className="empty-state compact-empty-state">
             <div className="empty-state-icon">
               <ClipboardList size={48} strokeWidth={1} color="var(--text-muted)" />
             </div>
@@ -190,7 +158,7 @@ const AdminDashboard = ({
           <div className="dashboard-list">
             {pendingAccountRequests.slice(0, 5).map((request) => (
               <div key={request.id} className="dashboard-list-item">
-                <div style={{ minWidth: 0 }}>
+                <div className="dashboard-list-content">
                   <strong>{request.name}</strong>
                   <p className="muted small">
                     @{request.username || "-"} &middot; {request.className || "Kelas belum diisi"}
@@ -212,8 +180,6 @@ const AdminDashboard = ({
         )}
       </div>
     </section>
-
-    {/* ——— Dataset Insight ——— */}
     <DatasetInsightSection
       localizedInsight={localizedInsight}
       datasetInsightLoading={datasetInsightLoading}

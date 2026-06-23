@@ -1,12 +1,8 @@
-/* ============================================
-   DESIGN TOKENS — Sistem Pengaduan Siswa
-   Palet: "Universitas Tepercaya"
-   Warna utama: Navy biru + Teal profesional
-   ============================================ */
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 :root {
-  /* ——— Color Palette ——— */
+  
   --navy-900: #0d1b2a;
   --navy-800: #132033;
   --navy-700: #1a2e45;
@@ -34,7 +30,7 @@
   --blue-600:  #155a74;
   --blue-100:  #ddf0f9;
 
-  /* ——— Semantic tokens ——— */
+  
   --bg-page:       #f4f7fb;
   --bg-surface:    #ffffff;
   --bg-subtle:     #f8fafc;
@@ -65,6 +61,11 @@
   --transition-fast:   0.15s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow:   0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  --z-sticky: 20;
+  --z-modal: 50;
+  --z-modal-content: 60;
+  --z-toast: 80;
 
   font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
   line-height: 1.5;
@@ -107,7 +108,6 @@ a {
   color: #ffffff;
 }
 
-/* ——— Custom Scrollbar ——— */
 ::-webkit-scrollbar { width: 7px; }
 ::-webkit-scrollbar-track { background: #edf1f5; }
 ::-webkit-scrollbar-thumb {
@@ -116,14 +116,11 @@ a {
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--teal-400); }
 
-/* ============================================
-   TOAST NOTIFICATION SYSTEM
-   ============================================ */
 .toast-container {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  z-index: 9999;
+  z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -142,11 +139,11 @@ a {
   color: #ffffff;
   box-shadow: var(--shadow-xl);
   pointer-events: all;
-  animation: toastSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: toastSlideIn 0.28s ease-out forwards;
 }
 
 .toast.toast-exit {
-  animation: toastSlideOut 0.28s ease forwards;
+  animation: toastSlideOut 0.22s ease-in forwards;
 }
 
 .toast-success { background: var(--green-600); }
@@ -182,9 +179,9 @@ a {
   padding: 0;
   font-size: 16px;
   line-height: 1;
-  width: auto;
-  height: auto;
-  min-height: 0;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
   flex-shrink: 0;
   margin-top: -2px;
   box-shadow: none;

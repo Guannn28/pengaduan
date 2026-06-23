@@ -46,6 +46,6 @@ module.exports = {
   ADMIN_USERNAME: String(process.env.ADMIN_USERNAME || "admin")
     .trim()
     .toLowerCase(),
-  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || "admin123",
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || "",
   UPLOADS_DIR: process.env.UPLOADS_DIR || "",
 };

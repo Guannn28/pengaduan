@@ -21,15 +21,6 @@ const formatFileSize = (bytes) => {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
-
-/**
- * FinalReportSummary — Komponen ringkasan laporan siap kirim.
- *
- * Fitur utama:
- * - Tabel ringkasan data yang dikumpulkan via percakapan chatbot
- * - Area unggah foto bukti dengan IMAGE PREVIEW interaktif menggunakan
- *   FileReader API — thumbnail muncul sebelum file dikirim ke server
- */
 const FinalReportSummary = ({
   chatFinalData,
   chatEvidence,
@@ -39,11 +30,6 @@ const FinalReportSummary = ({
   handleChatSubmitComplaint,
 }) => {
   const [previewUrl, setPreviewUrl] = useState(null);
-
-  /**
-   * Membuat URL preview lokal dari file yang dipilih menggunakan FileReader.
-   * URL ini bersifat sementara dan hanya ada di memori browser.
-   */
   const handleFileChange = (event) => {
     const file = event.target.files?.[0] || null;
     setChatEvidence(file);
@@ -70,12 +56,10 @@ const FinalReportSummary = ({
           <p className="muted small">Periksa kembali data berikut sebelum mengirim laporan.</p>
         </div>
         <span className="summary-badge">
-          <CheckCircle size={13} strokeWidth={2.5} style={{ marginRight: "5px" }} />
+          <CheckCircle size={13} strokeWidth={2.5} />
           Siap Dikirim
         </span>
       </div>
-
-      {/* Grid ringkasan data laporan */}
       <div className="final-summary-grid">
         <div>
           <span>Kategori</span>
@@ -109,21 +93,18 @@ const FinalReportSummary = ({
           <span>Bukti Tambahan</span>
           <strong>{renderFinalValue(chatFinalData.bukti)}</strong>
         </div>
-        <div style={{ gridColumn: "1 / -1" }}>
+        <div className="final-summary-wide">
           <span>Harapan Pelapor</span>
           <strong>{renderFinalValue(chatFinalData.harapan)}</strong>
         </div>
       </div>
-
-      {/* ——— Area Unggah Foto Bukti dengan Image Preview ——— */}
       <div className="chat-evidence-upload">
         <label>
-          <Paperclip size={14} strokeWidth={2} style={{ marginRight: "6px", verticalAlign: "middle" }} />
+          <Paperclip size={14} strokeWidth={2} />
           Lampiran Foto Bukti (Opsional)
         </label>
 
         {chatEvidence && previewUrl ? (
-          /* Tampilan preview setelah foto dipilih */
           <div className="evidence-image-preview-wrap">
             <img
               src={previewUrl}
@@ -133,7 +114,7 @@ const FinalReportSummary = ({
             <div className="evidence-image-preview-info">
               <strong>{chatEvidence.name}</strong>
               <span>{formatFileSize(chatEvidence.size)}</span>
-              <span style={{ color: "var(--teal-600)", fontSize: "12px", marginTop: "4px", fontWeight: 600 }}>
+              <span className="evidence-ready-text">
                 Siap diunggah
               </span>
             </div>
@@ -147,7 +128,6 @@ const FinalReportSummary = ({
             </button>
           </div>
         ) : (
-          /* Drop zone sebelum foto dipilih */
           <div className="file-drop-zone">
             <input
               key={chatEvidenceInputKey}
@@ -159,13 +139,11 @@ const FinalReportSummary = ({
               <Image size={28} strokeWidth={1.5} color="var(--text-muted)" />
             </div>
             <div className="file-drop-text">Klik untuk memilih foto bukti</div>
-            <div className="file-drop-hint">Format yang diterima: JPEG, JPG, PNG &bull; Ukuran maksimal 5 MB</div>
+            <div className="file-drop-hint">Format yang diterima: JPEG, JPG, PNG - Ukuran maksimal 5 MB</div>
           </div>
         )}
       </div>
-
-      {/* Tombol kirim laporan */}
-      <div className="form-actions" style={{ marginTop: "16px" }}>
+      <div className="form-actions final-summary-actions">
         <button
           className="primary submit-report-btn"
           type="button"
@@ -174,7 +152,7 @@ const FinalReportSummary = ({
         >
           {chatSubmitting ? (
             <>
-              <Loader2 size={16} strokeWidth={2.5} style={{ animation: "spin 1s linear infinite" }} />
+              <Loader2 className="inline-spinner" size={16} strokeWidth={2.5} />
               Mengirim Laporan...
             </>
           ) : (

@@ -5,10 +5,6 @@ import {
   getUrgencyValue,
 } from "../../utils/formatters";
 import { RefreshCw, FileX, Search } from "lucide-react";
-
-/**
- * Preview foto/video bukti pada baris tabel pengaduan siswa.
- */
 const EvidencePreview = ({ complaint, resolveMediaUrl }) => {
   if (!complaint.evidenceUrl) {
     return <span className="muted small">Tidak ada bukti</span>;
@@ -37,30 +33,20 @@ const EvidencePreview = ({ complaint, resolveMediaUrl }) => {
     </a>
   );
 };
-
-/**
- * Skeleton Loading — Animasi placeholder shimmer saat data API sedang dimuat.
- * Mencegah tampilan kosong/blank yang membingungkan pengguna.
- */
 const SkeletonRows = () => (
   <div className="table-card">
     {[1, 2, 3].map((i) => (
       <div key={i} className="skeleton-row">
         <div className="skeleton skeleton-badge" />
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px" }}>
-          <div className="skeleton skeleton-text" style={{ width: "40%" }} />
+        <div className="skeleton-stack">
+          <div className="skeleton skeleton-text skeleton-text-short" />
           <div className="skeleton skeleton-sm" />
         </div>
-        <div className="skeleton skeleton-text" style={{ width: "80px" }} />
+        <div className="skeleton skeleton-text skeleton-text-date" />
       </div>
     ))}
   </div>
 );
-
-/**
- * Empty State — Tampilan informatif dan empatik ketika tidak ada data pengaduan.
- * Menyesuaikan pesan berdasarkan konteks filter yang aktif.
- */
 const EmptyState = ({ filter }) => (
   <div className="empty-state">
     <div className="empty-state-icon">
@@ -109,7 +95,7 @@ const StudentComplaintList = ({
             </option>
           ))}
         </select>
-        <button className="ghost" onClick={() => fetchComplaints()} type="button" style={{ gap: "7px" }}>
+        <button className="ghost refresh-button" onClick={() => fetchComplaints()} type="button">
           <RefreshCw size={14} strokeWidth={2.5} />
           Perbarui
         </button>

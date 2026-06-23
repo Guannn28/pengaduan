@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   formatDate,
   getStatusLabel,
@@ -112,68 +113,94 @@ const ComplaintsSection = ({
   handleStatus,
   handleDelete,
   handleDownloadEvidence,
+  handleExportComplaints,
   setSelectedComplaint,
   error,
   successMessage,
-}) => (
-  <section className="card schedule-card">
-    <div className="card-head">
-      <div>
-        <h3>Daftar Pengaduan</h3>
-        <p className="muted small">
-          Tinjau laporan, ubah status penanganan, atau unduh bukti jika diperlukan.
-        </p>
-      </div>
-      <div className="filters">
-        <label>Status</label>
-        <select value={filter} onChange={(event) => setFilter(event.target.value)}>
-          <option value="all">Semua</option>
-          {statusOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <button className="ghost" type="button" onClick={() => fetchComplaints()}>
-          Muat ulang
-        </button>
-      </div>
-    </div>
+}) => {
+  const [exportLoading, setExportLoading] = useState(false);
 
-    {error && <div className="alert">{error}</div>}
-    {successMessage && <div className="alert success-alert">{successMessage}</div>}
+  const onExportComplaints = async () => {
+    if (!handleExportComplaints || exportLoading) return;
+    setExportLoading(true);
+    try {
+      await handleExportComplaints();
+    } finally {
+      setExportLoading(false);
+    }
+  };
 
-    {loading ? (
-      <div className="empty">Memuat data...</div>
-    ) : filtered.length === 0 ? (
-      <div className="empty">Belum ada pengaduan yang masuk.</div>
-    ) : (
-      <div className="table-card admin-table complaints-table">
-        <div className="table-slim head complaints-row-head">
-          <span>Pelapor</span>
-          <span>Kategori</span>
-          <span>Pesan</span>
-          <span>Bukti</span>
-          <span>Status</span>
-          <span>Tanggal</span>
-          <span>Aksi</span>
+  return (
+    <section className="card schedule-card">
+      <div className="card-head">
+        <div>
+          <h3>Daftar Pengaduan Admin</h3>
+          <p className="muted small">
+            Tinjau laporan, ubah status penanganan, atau unduh bukti jika diperlukan.
+          </p>
         </div>
-        {filtered.map((complaint) => (
-          <ComplaintRow
-            key={complaint.id}
-            complaint={complaint}
-            resolveMediaUrl={resolveMediaUrl}
-            statusOptions={statusOptions}
-            statusColor={statusColor}
-            handleStatus={handleStatus}
-            handleDelete={handleDelete}
-            handleDownloadEvidence={handleDownloadEvidence}
-            onOpenDetail={setSelectedComplaint}
-          />
-        ))}
+        <div className="filters complaints-toolbar">
+          {handleExportComplaints && (
+            <button
+              className="export-button"
+              id="export-complaints-excel-btn"
+              type="button"
+              disabled={exportLoading}
+              onClick={onExportComplaints}
+            >
+              {exportLoading ? "Mengekspor..." : "Ekspor Excel"}
+            </button>
+          )}
+          <label>Status</label>
+          <select value={filter} onChange={(event) => setFilter(event.target.value)}>
+            <option value="all">Semua</option>
+            {statusOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <button className="ghost" type="button" onClick={() => fetchComplaints()}>
+            Muat ulang
+          </button>
+        </div>
       </div>
-    )}
-  </section>
-);
+
+      {error && <div className="alert">{error}</div>}
+      {successMessage && <div className="alert success-alert">{successMessage}</div>}
+
+      {loading ? (
+        <div className="empty">Memuat data...</div>
+      ) : filtered.length === 0 ? (
+        <div className="empty">Belum ada pengaduan yang masuk.</div>
+      ) : (
+        <div className="table-card admin-table complaints-table">
+          <div className="table-slim head complaints-row-head">
+            <span>Pelapor</span>
+            <span>Kategori</span>
+            <span>Pesan</span>
+            <span>Bukti</span>
+            <span>Status</span>
+            <span>Tanggal</span>
+            <span>Aksi</span>
+          </div>
+          {filtered.map((complaint) => (
+            <ComplaintRow
+              key={complaint.id}
+              complaint={complaint}
+              resolveMediaUrl={resolveMediaUrl}
+              statusOptions={statusOptions}
+              statusColor={statusColor}
+              handleStatus={handleStatus}
+              handleDelete={handleDelete}
+              handleDownloadEvidence={handleDownloadEvidence}
+              onOpenDetail={setSelectedComplaint}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+};
 
 export default ComplaintsSection;

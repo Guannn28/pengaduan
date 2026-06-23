@@ -1,4 +1,5 @@
 const fs = require("fs");
+const ExcelJS = require("exceljs");
 const path = require("path");
 const { complaintCategories, complaintStatuses } = require("../constants");
 const { getDbState } = require("../config/db");
@@ -10,16 +11,10 @@ const {
   findComplaints,
   updateComplaintById,
 } = require("../models/complaintModel");
+const { findUsersByIds } = require("../models/userModel");
 const { parseObjectId } = require("../utils/objectId");
 const { normalizeComplaint } = require("../utils/serializers");
 const { getLocalEvidencePath, removeLocalEvidence } = require("../utils/fileStorage");
-
-/**
- * Memeriksa status kesehatan server dan koneksi database.
- * Fungsi ini digunakan untuk keperluan monitoring infrastruktur backend.
- * @param {Object} _req - Objek request dari Express (tidak digunakan)
- * @param {Object} res - Objek response dari Express
- */
 const health = async (_req, res) => {
   const dbState = getDbState();
   res.json({
@@ -30,16 +25,6 @@ const health = async (_req, res) => {
     lastDatabaseConnectedAt: dbState.lastConnectedAt || null,
   });
 };
-
-/**
- * Mengambil daftar pengaduan dari database.
- * Jika user adalah 'admin', maka seluruh pengaduan akan diambil.
- * Jika user adalah 'student', hanya pengaduan yang dibuat oleh siswa tersebut yang diambil.
- * Hasil diurutkan berdasarkan waktu pembuatan terbaru.
- * @param {Object} req - Objek request dari Express yang memuat informasi user
- * @param {Object} res - Objek response dari Express
- * @returns {Array} List data pengaduan yang sudah dinormalisasi
- */
 const listComplaints = async (req, res) => {
   try {
     const query = req.user.role === "admin" ? {} : { userId: parseObjectId(req.user.id) };
@@ -50,15 +35,6 @@ const listComplaints = async (req, res) => {
     return res.status(500).json({ error: "Gagal mengambil pengaduan." });
   }
 };
-
-/**
- * Membuat data pengaduan baru ke dalam sistem.
- * Menerima payload teks (kategori, pesan, status anonim) serta file bukti (foto/video).
- * File bukti diproses melalui middleware upload multer dan jalurnya disimpan ke database.
- * @param {Object} req - Objek request dari Express yang memuat form-data dan info file
- * @param {Object} res - Objek response dari Express
- * @returns {Object} Data pengaduan baru yang berhasil disimpan
- */
 const createComplaintHandler = async (req, res) => {
   try {
     const { category, message, isAnonymous } = req.body || {};
@@ -103,35 +79,19 @@ const createComplaintHandler = async (req, res) => {
     return res.status(500).json({ error: "Gagal membuat pengaduan." });
   }
 };
-
-/**
- * Memperbarui status dari sebuah pengaduan. (Dikhususkan untuk Admin)
- * Transisi status yang diizinkan meliputi: 'submitted' (Menunggu), 'in_progress' (Diproses), 
- * 'resolved' (Selesai), atau 'rejected' (Ditolak).
- * Fungsi ini memastikan bahwa status yang dikirim valid sebelum mengupdate database.
- * @param {Object} req - Objek request dari Express (memuat param ID dan body status baru)
- * @param {Object} res - Objek response dari Express
- * @returns {Object} Data pengaduan setelah statusnya diperbarui
- */
 const updateComplaintStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body || {};
-
-    // Validasi apakah status yang dikirim ada di dalam daftar status yang diizinkan
     if (!complaintStatuses.includes(status)) {
       return res.status(400).json({ error: "Status tidak valid. Transisi dibatalkan." });
     }
 
     const objectId = parseObjectId(id);
     const existing = objectId ? await findComplaintById(objectId) : null;
-    
-    // Verifikasi keberadaan data pengaduan
     if (!existing) {
       return res.status(404).json({ error: "Pengaduan tidak ditemukan." });
     }
-
-    // Eksekusi update status ke database dan catat waktu pembaruannya (updatedAt)
     await updateComplaintById(objectId, {
       $set: { status, updatedAt: new Date() },
     });
@@ -143,13 +103,6 @@ const updateComplaintStatus = async (req, res) => {
     return res.status(500).json({ error: "Gagal memperbarui status pengaduan." });
   }
 };
-
-/**
- * Menyediakan endpoint untuk mengunduh file bukti (evidence) yang terkait dengan suatu pengaduan.
- * Melakukan resolusi path lokal secara aman untuk mencegah path traversal vulnerability.
- * @param {Object} req - Objek request dari Express (memuat param ID pengaduan)
- * @param {Object} res - Objek response dari Express untuk transmisi file
- */
 const downloadComplaintEvidence = async (req, res) => {
   try {
     const { id } = req.params;
@@ -175,14 +128,6 @@ const downloadComplaintEvidence = async (req, res) => {
     return res.status(500).json({ error: "Gagal mengunduh file bukti." });
   }
 };
-
-/**
- * Menghapus data pengaduan beserta file bukti lokal yang dilampirkan. (Hanya untuk Admin/Owner)
- * Fungsi ini memastikan tidak ada "file yatim" (orphan files) yang tertinggal di server
- * dengan memanggil fungsi removeLocalEvidence().
- * @param {Object} req - Objek request dari Express (memuat param ID pengaduan)
- * @param {Object} res - Objek response dari Express (konfirmasi sukes)
- */
 const deleteComplaint = async (req, res) => {
   try {
     const { id } = req.params;
@@ -201,14 +146,6 @@ const deleteComplaint = async (req, res) => {
     return res.status(500).json({ error: "Gagal menghapus pengaduan." });
   }
 };
-
-/**
- * Mengambil ringkasan statistik dari total pengaduan berdasarkan statusnya.
- * Data ini digunakan untuk menampilkan insight di Admin Dashboard.
- * @param {Object} _req - Objek request dari Express
- * @param {Object} res - Objek response dari Express
- * @returns {Object} Data agregat total aduan per status dan list 5 aduan terbaru
- */
 const getStats = async (_req, res) => {
   try {
     const countsRows = await aggregateComplaintCounts();
@@ -228,6 +165,162 @@ const getStats = async (_req, res) => {
   }
 };
 
+const exportStatusLabels = {
+  submitted: "Diajukan",
+  in_progress: "Diproses",
+  resolved: "Selesai",
+  rejected: "Ditolak",
+};
+
+const safeCellValue = (value) => {
+  if (value === null || value === undefined) {
+    return "-";
+  }
+
+  const normalized = String(value).trim();
+  return normalized || "-";
+};
+
+const formatExportDate = (value) => {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return date.toLocaleString("id-ID", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+};
+
+const formatEvidenceValue = (complaint) => {
+  const evidenceName = safeCellValue(complaint.evidenceName);
+  const evidenceUrl = safeCellValue(complaint.evidenceUrl);
+
+  if (evidenceName === "-" && evidenceUrl === "-") {
+    return "-";
+  }
+
+  if (evidenceName !== "-" && evidenceUrl !== "-") {
+    return `${evidenceName} (${evidenceUrl})`;
+  }
+
+  return evidenceName !== "-" ? evidenceName : evidenceUrl;
+};
+
+const exportComplaintsToExcel = async (_req, res) => {
+  try {
+    const rows = await findComplaints({}, { sort: { createdAt: -1 } });
+    const reporterIds = rows.map((complaint) => complaint.userId).filter(Boolean);
+    const reporters = await findUsersByIds(reporterIds);
+    const reportersById = new Map(
+      reporters.map((reporter) => [reporter._id.toString(), reporter])
+    );
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "Sistem Pengaduan Siswa";
+    workbook.created = new Date();
+    workbook.modified = new Date();
+
+    const sheet = workbook.addWorksheet("Pengaduan Siswa");
+
+    sheet.columns = [
+      { header: "No", key: "no", width: 8 },
+      { header: "Nama Pelapor", key: "reporterName", width: 24 },
+      { header: "Username/Email Pelapor", key: "reporterUsername", width: 28 },
+      { header: "Kelas", key: "className", width: 16 },
+      { header: "Kategori Pengaduan", key: "category", width: 28 },
+      { header: "Isi Pengaduan", key: "message", width: 56 },
+      { header: "Status Anonim", key: "anonymousStatus", width: 16 },
+      { header: "Status Penanganan", key: "handlingStatus", width: 18 },
+      { header: "Bukti Pengaduan", key: "evidence", width: 42 },
+      { header: "Tanggal Pengaduan", key: "createdAt", width: 22 },
+      { header: "Tanggal Update", key: "updatedAt", width: 22 },
+    ];
+
+    const headerRow = sheet.getRow(1);
+    headerRow.eachCell((cell) => {
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF0D1B2A" },
+      };
+      cell.font = { color: { argb: "FFFFFFFF" }, bold: true };
+      cell.alignment = { vertical: "middle", horizontal: "center" };
+    });
+    headerRow.height = 24;
+
+    rows.forEach((complaint, index) => {
+      const reporter = complaint.userId
+        ? reportersById.get(complaint.userId.toString())
+        : null;
+      const isAnonymous = Boolean(complaint.isAnonymous);
+      const reporterName = isAnonymous
+        ? "Anonim"
+        : safeCellValue(complaint.name || reporter?.name);
+      const reporterUsername = isAnonymous
+        ? "-"
+        : safeCellValue(
+            complaint.username ||
+              complaint.email ||
+              reporter?.username ||
+              reporter?.email
+          );
+      const reporterClass = isAnonymous
+        ? "-"
+        : safeCellValue(complaint.className || reporter?.className);
+
+      sheet.addRow({
+        no: index + 1,
+        reporterName,
+        reporterUsername,
+        className: reporterClass,
+        category: safeCellValue(complaint.category),
+        message: safeCellValue(complaint.message),
+        anonymousStatus: isAnonymous ? "Ya" : "Tidak",
+        handlingStatus: exportStatusLabels[complaint.status] || safeCellValue(complaint.status),
+        evidence: formatEvidenceValue(complaint),
+        createdAt: formatExportDate(complaint.createdAt),
+        updatedAt: formatExportDate(complaint.updatedAt),
+      });
+    });
+
+    sheet.views = [{ state: "frozen", ySplit: 1 }];
+    sheet.autoFilter = {
+      from: "A1",
+      to: "K1",
+    };
+    sheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) {
+        return;
+      }
+
+      row.eachCell((cell) => {
+        cell.alignment = { vertical: "top", wrapText: true };
+      });
+    });
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="data-pengaduan.xlsx"'
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error("Export complaints to Excel error", err);
+    return res.status(500).json({ error: "Gagal mengekspor data pengaduan." });
+  }
+};
+
 module.exports = {
   health,
   listComplaints,
@@ -236,4 +329,5 @@ module.exports = {
   downloadComplaintEvidence,
   deleteComplaint,
   getStats,
+  exportComplaintsToExcel,
 };

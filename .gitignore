@@ -32,7 +32,6 @@ client/.env.*
 !.env.example
 !backend/.env.example
 !client/.env.example
-!client/.env.production
 
 # Logs and caches
 logs/

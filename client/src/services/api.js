@@ -136,6 +136,25 @@ export const api = {
     return data.data;
   },
 
+  exportComplaintsExcel: async (token) => {
+    const res = await fetch(`${API_URL}/api/complaints/export/excel`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      throw new Error(payload.error || "Gagal mengekspor data pengaduan.");
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "data-pengaduan.xlsx";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
   sendChatbotMessage: async (token, message, history, evidenceData) => {
     const body = { message, history };
     if (evidenceData) {

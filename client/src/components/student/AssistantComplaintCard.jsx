@@ -1,11 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Send, MessageSquare, Paperclip, X, Loader2 } from "lucide-react";
 import FinalReportSummary from "./FinalReportSummary";
-
-/**
- * Komponen bubble typing animation — indikator asisten sedang memproses
- * respons berikutnya (animasi tiga titik berdenyut).
- */
 const TypingBubble = () => (
   <div className="chat-row is-assistant">
     <div className="chat-avatar-dot">AP</div>
@@ -18,23 +13,12 @@ const TypingBubble = () => (
     </div>
   </div>
 );
-
-/**
- * Format ukuran file menjadi string yang mudah dibaca.
- */
 const formatFileSize = (bytes) => {
   if (!bytes) return "";
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
-
-/**
- * AssistantComplaintCard — Antarmuka percakapan humanis untuk pengisian laporan.
- * Meniru tampilan aplikasi pesan modern: bubble warna berbeda antara
- * pesan asisten (putih) dan pesan siswa (hijau muda), dengan auto-scroll
- * ke pesan terbaru setiap kali percakapan berlanjut.
- */
 const AssistantComplaintCard = ({
   error,
   chatMessages,
@@ -56,8 +40,6 @@ const AssistantComplaintCard = ({
 }) => {
   const chatBottomRef = useRef(null);
   const fileInputRef = useRef(null);
-
-  // Auto-scroll ke pesan terbaru setiap kali daftar pesan berubah
   useEffect(() => {
     if (chatBottomRef.current) {
       chatBottomRef.current.scrollIntoView({ behavior: "smooth" });
@@ -69,7 +51,6 @@ const AssistantComplaintCard = ({
     if (file) {
       handleChatAttach(file);
     }
-    // Reset input agar file yang sama bisa dipilih lagi
     event.target.value = "";
   };
 
@@ -83,26 +64,22 @@ const AssistantComplaintCard = ({
           </p>
         </div>
         <span className="compose-badge">
-          <MessageSquare size={13} strokeWidth={2.5} style={{ marginRight: "5px" }} />
+          <MessageSquare size={13} strokeWidth={2.5} />
           Asisten Pengaduan
         </span>
       </div>
 
       {error && <div className="alert">{error}</div>}
-
-      {/* Chat Panel */}
       <div className="chat-panel">
         <div className="chat-panel-head">
           <div className="chat-panel-identity">
             <div className="chat-panel-avatar">AP</div>
             <div>
               <strong>Asisten Pengaduan</strong>
-              <p className="muted small" style={{ color: "rgba(255,255,255,0.8)" }}>Siap membantu menyusun laporan</p>
+              <p className="muted small chat-panel-subtitle">Siap membantu menyusun laporan</p>
             </div>
           </div>
         </div>
-
-        {/* Jendela chat dengan scroll */}
         <div className="chat-window" aria-live="polite">
           {chatMessages.map((message, index) => (
             <div
@@ -117,13 +94,9 @@ const AssistantComplaintCard = ({
           ))}
 
           {chatLoading && <TypingBubble />}
-
-          {/* Anchor untuk auto-scroll */}
           <div ref={chatBottomRef} />
         </div>
       </div>
-
-      {/* Preview lampiran di atas area komposisi */}
       {chatAttachment && (
         <div className="chat-attach-preview">
           <div className="chat-attach-preview-info">
@@ -131,10 +104,10 @@ const AssistantComplaintCard = ({
             <span className="chat-attach-name">{chatAttachment.name}</span>
             <span className="chat-attach-size">{formatFileSize(chatAttachment.size)}</span>
             {chatAttachUploading && (
-              <Loader2 size={14} strokeWidth={2.5} style={{ animation: "spin 1s linear infinite" }} />
+              <Loader2 className="inline-spinner" size={14} strokeWidth={2.5} />
             )}
             {!chatAttachUploading && chatUploadedEvidence && (
-              <span className="chat-attach-status">✓ Terupload</span>
+              <span className="chat-attach-status">Terupload</span>
             )}
           </div>
           <button
@@ -148,16 +121,13 @@ const AssistantComplaintCard = ({
           </button>
         </div>
       )}
-
-      {/* Area komposisi pesan */}
       <div className="chat-compose">
-        {/* Hidden file input */}
         <input
           ref={fileInputRef}
           type="file"
           accept="image/jpeg,image/jpg,image/png"
           onChange={onFileSelected}
-          style={{ display: "none" }}
+          className="visually-hidden-file-input"
         />
 
         <textarea
@@ -173,7 +143,7 @@ const AssistantComplaintCard = ({
           }}
           disabled={chatLoading}
         />
-        <div className="form-actions" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <div className="form-actions chat-compose-actions">
           <button
             type="button"
             className="chat-attach-btn"
@@ -188,15 +158,12 @@ const AssistantComplaintCard = ({
             onClick={handleChatSend}
             disabled={chatLoading || !chatInput.trim()}
             title="Kirim pesan (Enter)"
-            style={{ gap: "8px" }}
           >
             <Send size={15} strokeWidth={2.5} />
             {chatLoading ? "Mengirim..." : "Kirim"}
           </button>
         </div>
       </div>
-
-      {/* Ringkasan laporan final */}
       {chatFinalData && (
         <FinalReportSummary
           chatFinalData={chatFinalData}

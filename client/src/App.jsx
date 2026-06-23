@@ -5,7 +5,7 @@ import AdminPage from "./pages/AdminPage";
 import { resolveMediaUrl as resolveMediaUrlValue } from "./utils/formatters";
 import "./App.css";
 import { api } from "./services/api";
-import { useToast } from "./context/ToastContext";
+import { useToast } from "./context/useToast";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
@@ -23,6 +23,14 @@ const statusColor = {
   rejected: "badge danger",
 };
 
+const createInitialChatMessages = () => [
+  {
+    role: "assistant",
+    content:
+      "Halo, saya akan membantu menyusun laporan. Ceritakan kejadian yang ingin Anda laporkan secara singkat.",
+  },
+];
+
 const resolveMediaUrl = (value) => {
   return resolveMediaUrlValue(value, API_URL);
 };
@@ -36,13 +44,7 @@ function App() {
   const [datasetInsight, setDatasetInsight] = useState(null);
   const [datasetInsightLoading, setDatasetInsightLoading] = useState(false);
   const [datasetInsightError, setDatasetInsightError] = useState("");
-  const [chatMessages, setChatMessages] = useState([
-    {
-      role: "assistant",
-      content:
-        "Halo, saya akan membantu menyusun laporan. Ceritakan kejadian yang ingin Anda laporkan secara singkat.",
-    },
-  ]);
+  const [chatMessages, setChatMessages] = useState(createInitialChatMessages);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [chatFinalData, setChatFinalData] = useState(null);
@@ -56,7 +58,6 @@ function App() {
   const [creatingUser, setCreatingUser] = useState(false);
   const [adminView, setAdminView] = useState("dashboard");
   const [filter, setFilter] = useState("all");
-  // error/successMessage masih digunakan untuk komponen LoginLayout yang tidak pakai toast
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [authMode, setAuthMode] = useState("login");
@@ -199,7 +200,6 @@ function App() {
     setChatAttachUploading(true);
     try {
       const result = await api.uploadChatEvidence(token, file);
-      console.log("[Frontend Debug] Bukti berhasil diupload:", result);
       setChatUploadedEvidence(result.file);
       showToast("Foto bukti berhasil dilampirkan.", "success");
     } catch (err) {
@@ -223,9 +223,8 @@ function App() {
     }
 
     const userMessage = { role: "user", content: message };
-    // Jika ada lampiran, tampilkan info di bubble chat pengguna
     if (chatAttachment) {
-      userMessage.content += `\n📎 Lampiran: ${chatAttachment.name}`;
+      userMessage.content += `\nLampiran: ${chatAttachment.name}`;
     }
     const newMessages = [...chatMessages, userMessage];
 
@@ -237,7 +236,6 @@ function App() {
 
     try {
       const result = await api.sendChatbotMessage(token, message, newMessages, chatUploadedEvidence || undefined);
-      console.log("[Frontend Debug] Balasan API:", result);
 
       const assistantReply = result?.message || "";
       if (assistantReply) {
@@ -247,7 +245,6 @@ function App() {
         ]);
       }
 
-      // Jika response backend mengembalikan format utuh, handle juga
       const status = result?.status || result?.data?.status;
       if (status === "completed") {
         showToast("Laporan dikumpulkan secara otomatis (atau siap dikirim).", "info");
@@ -291,13 +288,7 @@ function App() {
         setComplaints((prev) => [createdComplaint, ...prev]);
       }
 
-      setChatMessages([
-        {
-          role: "assistant",
-          content:
-            "Halo, saya akan membantu menyusun laporan. Ceritakan kejadian yang ingin Anda laporkan secara singkat.",
-        },
-      ]);
+      setChatMessages(createInitialChatMessages());
       setChatFinalData(null);
       setChatEvidence(null);
       setChatEvidenceInputKey((prev) => prev + 1);
@@ -453,6 +444,15 @@ function App() {
     }
   };
 
+  const handleExportComplaints = useCallback(async () => {
+    try {
+      await api.exportComplaintsExcel(token);
+      showToast("Data pengaduan berhasil diunduh.", "success");
+    } catch (err) {
+      showToast(err.message || "Gagal mengekspor data pengaduan.", "error");
+    }
+  }, [token, showToast]);
+
   const handleDeleteStudentAccount = async (id) => {
     const confirmed = window.confirm(
       "Hapus akun siswa ini? Siswa tidak akan bisa login lagi."
@@ -480,13 +480,7 @@ function App() {
     setDatasetInsightLoading(false);
     setDatasetInsightError("");
     setSuccessMessage("");
-    setChatMessages([
-      {
-        role: "assistant",
-        content:
-          "Halo, saya akan membantu menyusun laporan. Ceritakan kejadian yang ingin Anda laporkan secara singkat.",
-      },
-    ]);
+    setChatMessages(createInitialChatMessages());
     setChatInput("");
     setChatLoading(false);
     setChatFinalData(null);
@@ -553,6 +547,7 @@ function App() {
         datasetInsight={datasetInsight}
         datasetInsightLoading={datasetInsightLoading}
         datasetInsightError={datasetInsightError}
+        handleExportComplaints={handleExportComplaints}
         createUserForm={createUserForm}
         setCreateUserForm={setCreateUserForm}
         handleCreateUser={handleCreateUser}

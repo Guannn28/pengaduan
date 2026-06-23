@@ -48,9 +48,24 @@ const findUsers = (query = {}, options = {}) => {
   return cursor.toArray();
 };
 
+const findUsersByIds = (ids = []) => {
+  const { usersCollection } = getCollections();
+  const uniqueIds = [...new Map(ids.filter(Boolean).map((id) => [id.toString(), id])).values()];
+
+  if (!uniqueIds.length) {
+    return Promise.resolve([]);
+  }
+
+  return usersCollection.find({ _id: { $in: uniqueIds } }).toArray();
+};
+
 const ensureDefaultAdmin = async () => {
   const desiredUsername = env.ADMIN_USERNAME;
   const desiredPassword = env.ADMIN_PASSWORD;
+  if (!desiredPassword) {
+    throw new Error("ADMIN_PASSWORD wajib diset di environment.");
+  }
+
   const now = new Date();
   const salt = generateSalt();
   const hash = hashPassword(desiredPassword, salt);
@@ -66,7 +81,6 @@ const ensureDefaultAdmin = async () => {
       createdAt: now,
       updatedAt: now,
     });
-    console.log(`Admin default dibuat username: ${desiredUsername} password: ${desiredPassword}`);
     return;
   }
 
@@ -79,13 +93,13 @@ const ensureDefaultAdmin = async () => {
       updatedAt: now,
     },
   });
-  console.log(`Admin diperbarui ke username: ${desiredUsername} password: ${desiredPassword}`);
 };
 
 module.exports = {
   findUserByUsername,
   findUserById,
   findUsers,
+  findUsersByIds,
   createUser,
   deleteUserById,
   ensureDefaultAdmin,

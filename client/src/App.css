@@ -1,9 +1,5 @@
-/* ============================================
-   APP.CSS — Sistem Pengaduan Siswa
-   Modern, Professional, Empatik
-   ============================================ */
 
-/* ——— Page Shell ——— */
+
 .page,
 .student-shell,
 .login-page {
@@ -18,6 +14,30 @@
   overflow-x: hidden;
 }
 
+img,
+video,
+svg {
+  max-width: 100%;
+}
+
+.brand-text,
+.dashboard-list-content,
+.chat-panel-identity > div,
+.evidence-image-preview-info,
+.student-complaint-detail-item,
+.complaint-detail-item {
+  min-width: 0;
+}
+
+.brand-text,
+.dashboard-list-content,
+.student-complaint-detail-item,
+.complaint-detail-item,
+.empty,
+.alert {
+  overflow-wrap: anywhere;
+}
+
 .student-main {
   display: flex;
   min-width: 0;
@@ -25,17 +45,15 @@
   flex-direction: column;
 }
 
-/* ============================================
-   HEADER
-   ============================================ */
 .student-header,
 .login-topbar {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: var(--z-sticky);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 16px;
   padding: 14px clamp(16px, 3vw, 34px);
   border-bottom: 1px solid var(--border);
@@ -44,6 +62,11 @@
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
   box-shadow: 0 1px 0 var(--border), var(--shadow-xs);
   transition: background var(--transition-normal);
+}
+
+.student-header > *,
+.login-topbar > * {
+  min-width: 0;
 }
 
 .login-brand,
@@ -84,19 +107,6 @@
 
 .small { font-size: 12px; }
 
-.eyebrow,
-.label {
-  margin: 0;
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-/* ============================================
-   LOGIN PAGE
-   ============================================ */
 .login-grid {
   display: grid;
   min-height: calc(100vh - 70px);
@@ -163,7 +173,6 @@
 
 .benefit-item span { word-break: break-word; }
 
-/* ——— Login Card ——— */
 .login-card,
 .card {
   min-width: 0;
@@ -188,9 +197,6 @@
 
 .login-card h2 { font-size: 26px; font-weight: 800; }
 
-/* ============================================
-   FORMS
-   ============================================ */
 .login-form,
 .form {
   display: flex;
@@ -215,6 +221,8 @@ input,
 select,
 textarea {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--bg-subtle);
@@ -243,14 +251,17 @@ textarea::placeholder {
   color: var(--text-muted);
 }
 
-/* ============================================
-   BUTTONS — Micro-interactions
-   ============================================ */
+.visually-hidden-file-input {
+  display: none;
+}
+
 button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  max-width: 100%;
+  min-height: 44px;
   border: 1.5px solid transparent;
   border-radius: var(--radius-md);
   background: var(--accent);
@@ -260,6 +271,8 @@ button {
   font-size: 14px;
   font-weight: 700;
   padding: 11px 18px;
+  text-align: center;
+  overflow-wrap: anywhere;
   transition: transform var(--transition-fast),
               box-shadow var(--transition-fast),
               background var(--transition-fast),
@@ -281,6 +294,18 @@ button:active:not(:disabled) {
 button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+button:focus-visible,
+.ghost-link:focus-visible,
+.rail-tab:focus-visible,
+.student-detail-button:focus-visible,
+.complaint-detail-button:focus-visible,
+.file-drop-zone:focus-within,
+.evidence-remove-btn:focus-visible,
+.chat-attach-remove-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3.5px rgba(46, 124, 120, 0.18);
 }
 
 .primary {
@@ -323,7 +348,10 @@ button:disabled {
   color: var(--teal-700);
 }
 
-/* ——— Flex row utilities ——— */
+.refresh-button {
+  gap: 7px;
+}
+
 .login-extra,
 .switch-row,
 .header-actions,
@@ -331,6 +359,7 @@ button:disabled {
 .form-actions,
 .admin-switcher {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
@@ -338,9 +367,7 @@ button:disabled {
 
 .login-extra { justify-content: space-between; }
 
-/* ——— Checkbox ——— */
-.checkbox,
-.form label.checkbox-row {
+.checkbox {
   display: inline-flex;
   flex-direction: row;
   align-items: center;
@@ -348,17 +375,13 @@ button:disabled {
   font-weight: 600;
 }
 
-.checkbox input,
-.checkbox-row input {
+.checkbox input {
   width: 16px;
   height: 16px;
   margin: 0;
   accent-color: var(--teal-500);
 }
 
-/* ============================================
-   LAYOUT — Content & Workspace
-   ============================================ */
 .student-content {
   display: flex;
   width: 100%;
@@ -395,9 +418,6 @@ button:disabled {
 
 .admin-workspace-main { gap: 16px; }
 
-/* ============================================
-   SIDEBAR / OVERVIEW RAIL
-   ============================================ */
 .overview-rail {
   position: sticky;
   top: 88px;
@@ -434,7 +454,6 @@ button:disabled {
   color: rgba(255, 255, 255, 0.65);
 }
 
-/* ——— Rail Profile ——— */
 .rail-profile {
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr);
@@ -455,7 +474,6 @@ button:disabled {
 .admin-rail .rail-profile strong { font-size: 14px; line-height: 1.2; }
 .admin-rail .rail-profile span { margin-top: 2px; font-size: 12px; line-height: 1.25; }
 
-/* ——— Rail Avatar ——— */
 .rail-avatar {
   width: 48px;
   height: 48px;
@@ -463,7 +481,6 @@ button:disabled {
 
 .admin-rail .rail-avatar { width: 42px; height: 42px; font-size: 13px; }
 
-/* ——— Rail Stats ——— */
 .rail-stats { display: grid; gap: 8px; }
 
 .admin-rail .rail-stats {
@@ -505,7 +522,6 @@ button:disabled {
 
 .admin-rail .rail-stats strong { font-size: 18px; }
 
-/* ——— Rail Action / Tab ——— */
 .rail-action,
 .rail-tab {
   width: 100%;
@@ -546,9 +562,6 @@ button:disabled {
 
 .workspace-main > .admin-switcher { display: none; }
 
-/* ============================================
-   USER CHIP & HEADER ACTIONS
-   ============================================ */
 .user-chip {
   display: inline-flex;
   min-width: 0;
@@ -583,7 +596,6 @@ button:disabled {
 .admin-user-chip { gap: 8px; padding: 6px 8px; box-shadow: none; }
 .admin-header .ghost { padding: 8px 12px; }
 
-/* ——— Avatar ——— */
 .avatar {
   display: inline-flex;
   align-items: center;
@@ -597,7 +609,6 @@ button:disabled {
 
 .avatar.sm { width: 36px; height: 36px; font-size: 13px; }
 
-/* ——— Icon Button ——— */
 .icon-btn {
   width: 38px;
   height: 38px;
@@ -607,9 +618,6 @@ button:disabled {
   color: var(--teal-500);
 }
 
-/* ============================================
-   WELCOME CARD
-   ============================================ */
 .welcome-card {
   display: flex;
   justify-content: space-between;
@@ -650,9 +658,6 @@ button:disabled {
 .admin-welcome-card h2 { font-size: clamp(18px, 2vw, 24px); line-height: 1.2; }
 .admin-welcome-card .muted { margin: 4px 0 0; }
 
-/* ============================================
-   STUDENT GRID
-   ============================================ */
 .student-grid {
   display: grid;
   width: 100%;
@@ -666,9 +671,6 @@ button:disabled {
   grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.75fr);
 }
 
-/* ============================================
-   ACCOUNT REQUEST SECTION
-   ============================================ */
 .account-requests-card { padding-bottom: 16px; }
 .account-form-card { padding: 18px; align-self: start; }
 .account-form-card h3 { font-size: 16px; font-weight: 700; }
@@ -693,12 +695,8 @@ button:disabled {
   padding: 13px;
 }
 
-/* ——— Card Base ——— */
 .card { padding: 20px; }
 
-/* ============================================
-   CHATBOT — Assistant Complaint Card
-   ============================================ */
 .assistant-card {
   display: flex;
   flex-direction: column;
@@ -712,12 +710,14 @@ button:disabled {
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
+  flex-wrap: wrap;
 }
 
 .compose-badge,
 .summary-badge {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   border-radius: var(--radius-pill);
   background: linear-gradient(135deg, var(--teal-100), #d8f5f3);
   color: var(--teal-700);
@@ -728,7 +728,6 @@ button:disabled {
   border: 1px solid rgba(46,124,120,0.15);
 }
 
-/* ——— Chat Panel (WhatsApp-like) ——— */
 .chat-panel {
   border: 1.5px solid var(--border);
   border-radius: var(--radius-lg);
@@ -741,6 +740,8 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
   padding: 14px 16px;
   border-bottom: 1px solid rgba(0,0,0,0.08);
   background: #075e54;
@@ -749,6 +750,7 @@ button:disabled {
 
 .chat-panel-identity {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: 12px;
 }
@@ -768,9 +770,9 @@ button:disabled {
 }
 
 .chat-panel-head .chat-panel-identity strong { color: #fff; }
-.chat-panel-head .chat-panel-identity p { color: rgba(255,255,255,0.8) !important; }
+.chat-panel-head .chat-panel-identity p,
+.chat-panel-subtitle { color: rgba(255,255,255,0.82) !important; }
 
-/* ——— Chat Window ——— */
 .chat-window {
   display: flex;
   max-height: 420px;
@@ -799,7 +801,6 @@ button:disabled {
   gap: 8px;
 }
 
-/* ——— Chat Bubbles ——— */
 .chat-bubble {
   max-width: 72%;
   border-radius: 18px;
@@ -810,7 +811,7 @@ button:disabled {
   font-size: 14px;
   position: relative;
   box-shadow: 0 1px 2px rgba(0,0,0,0.13);
-  animation: bubblePop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: bubblePop 0.22s ease-out forwards;
 }
 
 @keyframes bubblePop {
@@ -833,21 +834,18 @@ button:disabled {
   box-shadow: var(--shadow-xs);
 }
 
-/* User bubble — whatsapp green-blue teal style */
 .chat-row.is-user .chat-bubble {
   background: linear-gradient(135deg, #dcf8c6, #c8f0b0);
   color: #1a3325;
   border-bottom-right-radius: 4px;
 }
 
-/* Assistant bubble — clean white */
 .chat-row.is-assistant .chat-bubble {
   background: #ffffff;
   color: var(--navy-800);
   border-bottom-left-radius: 4px;
 }
 
-/* Typing indicator */
 .chat-bubble.typing {
   display: flex;
   align-items: center;
@@ -869,18 +867,17 @@ button:disabled {
   height: 7px;
   border-radius: 50%;
   background: var(--teal-400);
-  animation: typingBounce 1.2s ease-in-out infinite;
+  animation: typingPulse 1.2s ease-out infinite;
 }
 
 .typing-dot:nth-child(2) { animation-delay: 0.2s; }
 .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
-@keyframes typingBounce {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
-  30%           { transform: translateY(-6px); opacity: 1; }
+@keyframes typingPulse {
+  0%, 70%, 100% { transform: scale(0.9); opacity: 0.45; }
+  35%           { transform: scale(1); opacity: 1; }
 }
 
-/* ——— Chat Compose ——— */
 .chat-compose {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -902,6 +899,12 @@ button:disabled {
 
 .chat-compose .form-actions { align-items: stretch; }
 
+.chat-compose-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .chat-compose button {
   min-height: 48px;
   min-width: 80px;
@@ -909,7 +912,6 @@ button:disabled {
   background: linear-gradient(135deg, var(--teal-500), var(--teal-700));
 }
 
-/* ——— Chat Attachment Button ——— */
 .chat-attach-btn {
   min-height: 40px !important;
   min-width: 40px !important;
@@ -939,11 +941,11 @@ button:disabled {
   cursor: not-allowed;
 }
 
-/* ——— Chat Attachment Preview Bar ——— */
 .chat-attach-preview {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 8px 14px;
   border: 1.5px solid var(--teal-300);
@@ -955,6 +957,7 @@ button:disabled {
 .chat-attach-preview-info {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   min-width: 0;
   color: var(--teal-700);
@@ -966,7 +969,7 @@ button:disabled {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 180px;
+  max-width: min(180px, 100%);
   color: var(--navy-900);
 }
 
@@ -978,9 +981,12 @@ button:disabled {
 }
 
 .chat-attach-status {
+  border-radius: var(--radius-pill);
+  background: rgba(46, 124, 120, 0.1);
   color: var(--teal-600);
   font-size: 11px;
   font-weight: 700;
+  padding: 2px 7px;
   flex-shrink: 0;
 }
 
@@ -1008,9 +1014,14 @@ button:disabled {
   box-shadow: none;
 }
 
-/* ============================================
-   FINAL REPORT SUMMARY
-   ============================================ */
+.inline-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .final-summary {
   border: 1.5px solid rgba(46, 124, 120, 0.16);
   border-radius: var(--radius-lg);
@@ -1023,6 +1034,7 @@ button:disabled {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 14px;
   margin-bottom: 14px;
 }
@@ -1063,7 +1075,10 @@ button:disabled {
   word-break: break-word;
 }
 
-/* ——— Evidence Upload ——— */
+.final-summary-wide {
+  grid-column: 1 / -1;
+}
+
 .chat-evidence-upload {
   display: flex;
   flex-direction: column;
@@ -1075,20 +1090,21 @@ button:disabled {
 
 .chat-evidence-upload label {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   gap: 7px;
   color: var(--navy-800);
   font-size: 14px;
   font-weight: 600;
 }
 
-/* ——— Image Preview for Upload ——— */
 .evidence-image-preview-wrap {
   display: flex;
   align-items: flex-start;
+  flex-wrap: wrap;
   gap: 14px;
   padding: 12px;
-  border: 1.5px dashed var(--teal-400);
+  border: 1px solid rgba(46, 124, 120, 0.22);
   border-radius: var(--radius-md);
   background: var(--teal-50);
   animation: fadeIn 0.3s ease;
@@ -1114,6 +1130,7 @@ button:disabled {
   flex-direction: column;
   gap: 3px;
   min-width: 0;
+  max-width: 100%;
 }
 
 .evidence-image-preview-info strong {
@@ -1127,6 +1144,13 @@ button:disabled {
 .evidence-image-preview-info span {
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+.evidence-ready-text {
+  color: var(--teal-600) !important;
+  font-size: 12px !important;
+  margin-top: 4px;
+  font-weight: 700;
 }
 
 .evidence-remove-btn {
@@ -1176,7 +1200,6 @@ button:disabled {
 .file-drop-text { font-size: 13px; color: var(--text-secondary); }
 .file-drop-hint { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
 
-/* ——— Submit Button ——— */
 .submit-report-btn {
   min-height: 48px;
   font-size: 15px;
@@ -1184,15 +1207,25 @@ button:disabled {
   box-shadow: 0 8px 20px rgba(46, 124, 120, 0.28);
 }
 
-/* ============================================
-   CARD HEAD & FILTER
-   ============================================ */
+.final-summary-actions {
+  margin-top: 16px;
+}
+
 .card-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
   flex-wrap: wrap;
+}
+
+.card-head .filters {
+  flex: 1 1 280px;
+  justify-content: flex-end;
+}
+
+.card-head .ghost {
+  flex: 0 1 auto;
 }
 
 .filters label {
@@ -1206,23 +1239,24 @@ button:disabled {
   min-width: 150px;
 }
 
-/* ============================================
-   TABLE CARD
-   ============================================ */
+.complaints-toolbar .export-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .table-card {
   width: 100%;
   min-width: 0;
   margin-top: 16px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--bg-surface);
   box-shadow: var(--shadow-xs);
 }
 
-/* ============================================
-   ADMIN STAT CARDS
-   ============================================ */
 .admin-stat-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1239,20 +1273,16 @@ button:disabled {
   border-radius: var(--radius-lg);
   background: var(--bg-surface);
   padding: 18px 20px;
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow: var(--shadow-xs);
+  transition: transform var(--transition-fast),
+              box-shadow var(--transition-fast),
+              border-color var(--transition-fast);
   position: relative;
   overflow: hidden;
 }
 
 .admin-stat-card::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  border-radius: 0 2px 2px 0;
+  content: none;
 }
 
 .admin-stat-card:hover {
@@ -1260,12 +1290,31 @@ button:disabled {
   box-shadow: var(--shadow-md);
 }
 
-.admin-stat-card span {
+.admin-stat-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.admin-stat-card-head > span:first-child {
   color: var(--text-muted);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.admin-stat-icon {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
 }
 
 .admin-stat-card strong {
@@ -1283,36 +1332,32 @@ button:disabled {
   font-weight: 600;
 }
 
-/* Colored card variants */
 .admin-stat-card.warning {
   border-color: #f0d89a;
   background: linear-gradient(135deg, #fffbee 0%, #fffaf0 100%);
 }
-.admin-stat-card.warning::after { background: #e8a916; }
+.admin-stat-card.warning .admin-stat-icon { background: var(--gold-100); color: #7a4f00; }
 
 .admin-stat-card.info {
   border-color: #a8d4e8;
   background: linear-gradient(135deg, #eef8fc 0%, #f0f9fd 100%);
 }
-.admin-stat-card.info::after { background: #1a7ab0; }
+.admin-stat-card.info .admin-stat-icon { background: var(--blue-100); color: var(--blue-600); }
 
 .admin-stat-card.success,
 .admin-stat-card.student {
   border-color: #9fd4b2;
   background: linear-gradient(135deg, #edfaf3 0%, #f2fbf6 100%);
 }
-.admin-stat-card.success::after,
-.admin-stat-card.student::after { background: #22a55e; }
+.admin-stat-card.success .admin-stat-icon,
+.admin-stat-card.student .admin-stat-icon { background: var(--green-100); color: var(--green-600); }
 
 .admin-stat-card.account {
   border-color: #a8d1cc;
   background: linear-gradient(135deg, #eff9f8 0%, #f2faf9 100%);
 }
-.admin-stat-card.account::after { background: var(--teal-500); }
+.admin-stat-card.account .admin-stat-icon { background: var(--teal-100); color: var(--teal-700); }
 
-/* ============================================
-   DASHBOARD OVERVIEW
-   ============================================ */
 .dashboard-overview-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1350,6 +1395,10 @@ button:disabled {
 
 .dashboard-list-item strong { color: var(--navy-900); font-weight: 700; }
 
+.dashboard-list-content {
+  min-width: 0;
+}
+
 .dashboard-list-actions {
   display: flex;
   flex: 0 0 auto;
@@ -1361,12 +1410,18 @@ button:disabled {
 
 .compact-empty { padding: 28px 12px; }
 
-/* ============================================
-   EMPTY STATE
-   ============================================ */
 .empty {
-  padding: 56px 24px;
+  display: flex;
+  min-height: 132px;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(160deg, var(--bg-subtle), var(--bg-surface));
+  padding: 28px 24px;
   color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
   text-align: center;
 }
 
@@ -1402,9 +1457,10 @@ button:disabled {
   line-height: 1.5;
 }
 
-/* ============================================
-   SKELETON LOADING
-   ============================================ */
+.compact-empty-state {
+  padding: 32px 24px;
+}
+
 .skeleton {
   border-radius: var(--radius-md);
   background: linear-gradient(90deg, #e8edf1 25%, #f4f7f9 50%, #e8edf1 75%);
@@ -1430,15 +1486,20 @@ button:disabled {
 .skeleton-text { height: 14px; }
 .skeleton-sm   { height: 10px; width: 60%; }
 .skeleton-badge { height: 24px; width: 70px; border-radius: var(--radius-pill); }
-.skeleton-avatar { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; }
+.skeleton-stack {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+}
 
-/* ============================================
-   DATASET INSIGHT
-   ============================================ */
+.skeleton-text-short { width: 40%; }
+.skeleton-text-date { width: 80px; }
+
 .dataset-insight-card {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 18px;
 }
 
 .dataset-insight-head {
@@ -1449,23 +1510,27 @@ button:disabled {
 }
 
 .dataset-reference-badge { padding: 6px 10px; }
-.dataset-insight-note { margin-top: 4px; }
+.dataset-insight-note {
+  margin-top: 2px;
+  max-width: 820px;
+}
 
 .dataset-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .dataset-summary-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  justify-content: space-between;
+  gap: 8px;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
-  background: linear-gradient(160deg, var(--bg-subtle), var(--bg-surface));
-  padding: 12px 13px;
-  min-height: 96px;
+  background: linear-gradient(160deg, #f6fbfa, var(--bg-surface));
+  padding: 14px 15px;
+  min-height: 106px;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
@@ -1482,60 +1547,116 @@ button:disabled {
   text-transform: uppercase;
 }
 
-.dataset-summary-item strong { color: var(--navy-900); font-size: 20px; font-weight: 800; line-height: 1.2; }
-.dataset-summary-item p { margin: 0; color: var(--teal-600); font-size: 12px; font-weight: 700; }
-.dataset-summary-insight { margin: -2px 0 0; color: var(--text-secondary); font-size: 13px; }
+.dataset-summary-item strong {
+  color: var(--navy-900);
+  font-size: 24px;
+  font-weight: 850;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.dataset-summary-item p {
+  margin: 0;
+  color: var(--teal-600);
+  font-size: 12px;
+  font-weight: 700;
+}
 
 .dataset-insight-actions { display: flex; justify-content: flex-start; }
 .dataset-insight-actions .ghost { padding: 8px 12px; font-size: 12px; }
 
 .dataset-insight-detail {
   display: grid;
+  grid-template-rows: 0fr;
   gap: 14px;
-  max-height: 0;
   overflow: hidden;
   opacity: 0;
   transform: translateY(-8px);
-  transition: max-height 0.32s ease, opacity 0.26s ease, transform 0.26s ease, margin-top 0.26s ease;
+  transition: grid-template-rows 0.3s ease-out,
+              opacity 0.24s ease-out,
+              transform 0.24s ease-out;
+}
+
+.dataset-insight-detail-inner {
+  display: grid;
+  gap: 14px;
+  min-height: 0;
+  overflow: visible;
 }
 
 .dataset-insight-detail.is-expanded {
-  max-height: 1500px;
+  grid-template-rows: 1fr;
   opacity: 1;
   transform: translateY(0);
-  margin-top: 2px;
 }
 
 .dataset-chart-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 
 .dataset-chart-card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--bg-subtle);
-  padding: 14px;
-  max-height: 300px;
-  overflow: auto;
+  padding: 16px;
+  min-height: 0;
+  overflow: visible;
 }
 
-.dataset-chart-card h4 { margin: 0; color: var(--navy-900); font-size: 14px; font-weight: 700; }
+.dataset-chart-card-head {
+  display: grid;
+  gap: 4px;
+}
+
+.dataset-chart-card h4 {
+  margin: 0;
+  color: var(--navy-900);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.dataset-chart-card-head p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.dataset-bar-list {
+  display: grid;
+  gap: 10px;
+}
 
 .dataset-bar-row {
   display: grid;
-  grid-template-columns: minmax(120px, 0.95fr) minmax(120px, 1.4fr) 60px;
-  gap: 10px;
+  grid-template-columns: minmax(150px, 1.1fr) minmax(120px, 1.4fr) 64px;
+  gap: 12px;
   align-items: center;
 }
 
-.dataset-bar-row strong { display: block; color: var(--navy-800); font-size: 12px; line-height: 1.3; }
+.dataset-bar-label { min-width: 0; }
+.dataset-bar-row strong {
+  display: block;
+  color: var(--navy-800);
+  font-size: 12px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
 .dataset-bar-row .muted { margin: 2px 0 0; font-size: 11px; }
-.dataset-bar-row span { color: var(--teal-600); font-size: 11px; font-weight: 800; text-align: right; }
+.dataset-bar-row span {
+  color: var(--teal-600);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 
 .dataset-bar-track {
   width: 100%;
@@ -1546,18 +1667,19 @@ button:disabled {
 }
 
 .dataset-bar-fill {
+  width: 100%;
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, var(--teal-300), var(--teal-500));
-  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scaleX(var(--bar-scale, 0));
+  transform-origin: left center;
+  transition: transform 0.55s ease-out;
 }
 
-/* ============================================
-   STUDENT COMPLAINTS TABLE
-   ============================================ */
 .student-complaints-table .table-slim {
   grid-template-columns: 130px 140px 120px minmax(280px, 1.45fr) 160px 170px;
   align-items: start;
+  min-width: 1092px;
 }
 
 .student-complaints-table .table-slim.head { align-items: center; }
@@ -1611,13 +1733,10 @@ button:disabled {
 .student-evidence-preview:hover { transform: scale(1.04); }
 .student-evidence-preview-large { width: min(100%, 420px); max-width: 420px; height: auto; max-height: 280px; }
 
-/* ============================================
-   STUDENT COMPLAINT MODAL
-   ============================================ */
 .student-complaint-modal {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1678,12 +1797,10 @@ button:disabled {
   padding: 12px 14px;
 }
 
-/* ============================================
-   ADMIN COMPLAINTS TABLE
-   ============================================ */
 .complaints-table .table-slim {
   grid-template-columns: 160px 140px minmax(280px, 1.35fr) 160px 130px 170px 170px;
   align-items: start;
+  min-width: 1230px;
 }
 
 .complaints-table .table-slim.head { align-items: center; }
@@ -1731,11 +1848,10 @@ button:disabled {
   display: block;
 }
 
-/* ——— Admin Complaint Detail Modal ——— */
 .complaint-detail-modal {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1754,13 +1870,14 @@ button:disabled {
 
 .complaint-detail-content {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-modal-content);
   width: min(920px, 100%);
+  max-width: calc(100vw - 40px);
   max-height: min(88vh, 900px);
   overflow: auto;
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
-  animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: modalPop 0.26s ease-out;
 }
 
 @keyframes modalPop {
@@ -1772,6 +1889,7 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
   border-radius: var(--radius-xl);
 }
 
@@ -1833,14 +1951,12 @@ button:disabled {
   border-radius: var(--radius-md);
 }
 
-/* ============================================
-   TABLE SLIM (Shared base)
-   ============================================ */
 .table-slim {
   display: grid;
   grid-template-columns: 1fr 1fr 1.5fr 1fr;
   gap: 12px;
   align-items: center;
+  min-width: 680px;
   padding: 14px 16px;
   border-top: 1px solid var(--border);
   transition: background var(--transition-fast);
@@ -1865,9 +1981,12 @@ button:disabled {
 .welcome-card > *,
 .card-head > * { min-width: 0; }
 
+.table-slim > span {
+  overflow-wrap: anywhere;
+}
+
 .table-slim > span::before { display: none; }
 
-.student-table { grid-template-columns: 0.8fr 1fr 0.8fr minmax(180px, 1.4fr) 1fr 1fr; }
 .admin-table .table-slim { grid-template-columns: 1.1fr 0.9fr minmax(180px, 1.45fr) 1fr 0.85fr 1fr 1fr; }
 .account-request-row,
 .admin-table .account-request-row { grid-template-columns: 1.2fr 0.72fr 1fr 0.78fr 0.95fr 0.85fr; }
@@ -1875,6 +1994,7 @@ button:disabled {
 .admin-table .student-account-row { grid-template-columns: 1.1fr 1fr 0.85fr 1fr 0.7fr 0.9fr; }
 
 .account-request-table .table-slim { gap: 10px; padding: 11px 13px; }
+.account-request-table .account-request-row { min-width: 840px; }
 .account-request-table .table-slim.head { padding-block: 9px; }
 .account-request-table .muted { margin: 3px 0; }
 .account-request-table .evidence-thumb { max-width: 92px; max-height: 64px; }
@@ -1920,6 +2040,7 @@ button:disabled {
 .account-history-table { margin-top: 10px; }
 
 .student-account-table .table-slim { gap: 10px; padding: 9px 12px; }
+.student-account-table .student-account-row { min-width: 760px; }
 .student-account-table .table-slim.head { padding-block: 8px; }
 .student-account-table strong { font-size: 13px; }
 .student-account-table .badge { padding: 4px 8px; font-size: 11px; }
@@ -1927,9 +2048,6 @@ button:disabled {
 
 .message { white-space: pre-wrap; word-break: break-word; line-height: 1.45; }
 
-/* ============================================
-   BADGES
-   ============================================ */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -1952,9 +2070,6 @@ button:disabled {
 .badge.urgency-medium { background: var(--gold-100); color: #7a4f00; }
 .badge.urgency-low    { background: var(--green-100); color: var(--green-600); }
 
-/* ============================================
-   ADMIN SWITCHER
-   ============================================ */
 .admin-switcher {
   align-items: stretch;
   border-bottom: 2px solid var(--border);
@@ -1964,33 +2079,33 @@ button:disabled {
 
 .admin-nav-btn {
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -2px;
+  border-bottom: none;
+  margin-bottom: 0;
   background: transparent;
   color: var(--text-secondary);
   padding: 10px 14px;
   font-size: 13px;
   font-weight: 600;
-  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+  box-shadow: inset 0 -3px 0 transparent;
+  transition: color var(--transition-fast),
+              box-shadow var(--transition-fast),
+              background var(--transition-fast);
 }
 
 .admin-nav-btn:hover:not(:disabled) {
   color: var(--teal-600);
   background: var(--teal-50);
   transform: none;
-  box-shadow: none;
+  box-shadow: inset 0 -3px 0 rgba(46, 124, 120, 0.18);
 }
 
 .admin-nav-btn.active {
-  border-bottom-color: var(--teal-500);
+  box-shadow: inset 0 -3px 0 var(--teal-500);
   color: var(--teal-600);
   background: var(--teal-50);
   font-weight: 800;
 }
 
-/* ============================================
-   ADMIN ACTIONS
-   ============================================ */
 .admin-actions,
 .evidence-actions {
   display: flex;
@@ -2008,13 +2123,6 @@ button:disabled {
   background: #dce5ea;
 }
 
-.evidence-preview-card {
-  border: 1.5px dashed rgba(25, 85, 84, 0.3);
-  border-radius: var(--radius-md);
-  padding: 12px;
-  background: var(--teal-50);
-}
-
 .evidence-preview {
   width: 100%;
   max-height: 230px;
@@ -2023,9 +2131,6 @@ button:disabled {
   background: #e7eef1;
 }
 
-/* ============================================
-   ALERTS & MESSAGES
-   ============================================ */
 .danger-text { color: var(--red-600); border-color: rgba(192, 57, 43, 0.22); }
 
 .small-btn { padding: 8px 11px; font-size: 12px; min-height: 34px; }
@@ -2049,16 +2154,33 @@ button:disabled {
   color: #1a6840;
 }
 
-/* ============================================
-   RESPONSIVE
-   ============================================ */
+@media (max-width: 1279px) {
+  .student-content {
+    padding-inline: clamp(16px, 2vw, 28px);
+  }
+
+  .admin-workspace-layout {
+    grid-template-columns: 244px minmax(0, 1fr);
+  }
+
+  .overview-rail {
+    padding: 16px;
+  }
+
+  .admin-stat-card {
+    padding: 16px;
+  }
+}
+
 @media (max-width: 1050px) {
   .workspace-layout { grid-template-columns: 1fr; }
-  .overview-rail { position: relative; top: auto; }
+  .overview-rail { position: relative; top: auto; width: 100%; }
   .rail-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .student-grid, .admin-grid { grid-template-columns: 1fr; }
   .admin-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dashboard-overview-grid { grid-template-columns: 1fr; }
+  .dataset-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dataset-chart-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 900px) {
@@ -2066,12 +2188,19 @@ button:disabled {
   .welcome { max-width: 100%; }
   .login-card { width: 100%; }
   .table-slim,
-  .student-table,
   .admin-table .table-slim,
   .account-request-row,
   .admin-table .account-request-row,
   .student-account-row,
   .admin-table .student-account-row { grid-template-columns: 1fr; }
+  .table-slim,
+  .admin-table .table-slim,
+  .account-request-table .account-request-row,
+  .student-account-table .student-account-row,
+  .student-complaints-table .table-slim,
+  .complaints-table .table-slim {
+    min-width: 0;
+  }
   .table-slim.head,
   .admin-table .table-slim.head { display: none; }
   .table-slim:not(.head) { gap: 10px; padding: 16px; }
@@ -2087,6 +2216,7 @@ button:disabled {
   }
   .admin-actions, .admin-actions select, .admin-actions button,
   .filters, .filters select, .filters button { width: 100%; }
+  .card-head .filters { justify-content: flex-start; }
   .complaint-detail-grid { grid-template-columns: 1fr; }
   .student-complaint-detail-grid,
   .student-complaints-table .table-slim,
@@ -2094,10 +2224,19 @@ button:disabled {
   .compose-head, .final-summary-head { flex-direction: column; }
   .dataset-summary-grid, .dataset-chart-grid { grid-template-columns: 1fr; }
   .dataset-summary-item { min-height: 0; }
+  .student-complaint-modal,
+  .complaint-detail-modal {
+    align-items: stretch;
+    padding: 12px;
+  }
+  .complaint-detail-content {
+    max-height: calc(100vh - 24px);
+  }
 }
 
 @media (max-width: 720px) {
-  .student-header, .login-topbar { position: relative; align-items: flex-start; }
+  .student-header, .login-topbar { position: relative; align-items: flex-start; flex-wrap: wrap; }
+  .login-grid { min-height: auto; }
   .brand-inline, .header-actions { width: 100%; }
   .header-actions { justify-content: flex-start; }
   .user-chip { flex: 1 1 220px; }
@@ -2109,9 +2248,13 @@ button:disabled {
   .dashboard-list-item, .dashboard-list-actions { align-items: flex-start; flex-direction: column; }
   .chat-compose { grid-template-columns: 1fr; }
   .chat-compose .form-actions, .chat-compose button { width: 100%; }
+  .chat-compose-actions {
+    flex-direction: column;
+  }
   .chat-bubble { max-width: 88%; }
   .dataset-bar-row { grid-template-columns: 1fr; }
   .dataset-bar-row span { text-align: left; }
+  .dataset-bar-track { min-width: 0; }
   .rail-stats { grid-template-columns: 1fr; }
   .admin-rail .rail-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .admin-header { gap: 8px; }
@@ -2120,6 +2263,15 @@ button:disabled {
   .admin-user-chip { flex: 0 1 auto; }
   .toast-container { bottom: 16px; right: 16px; left: 16px; }
   .toast { min-width: unset; max-width: 100%; }
+  .complaint-detail-content {
+    width: calc(100vw - 32px);
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 32px);
+    border-radius: var(--radius-lg);
+  }
+  .complaint-detail-content .card {
+    border-radius: var(--radius-lg);
+  }
 }
 
 @media (max-width: 480px) {
@@ -2129,4 +2281,51 @@ button:disabled {
   .admin-header .brand-inline, .admin-header .header-actions { width: 100%; flex: 1 1 100%; }
   .admin-header .header-actions { justify-content: flex-start; }
   .welcome h1 { font-size: 30px; }
+  .chat-compose-actions {
+    flex-direction: column;
+  }
+  .chat-window {
+    min-height: 220px;
+    max-height: 360px;
+  }
+  .dashboard-list-item,
+  .table-slim:not(.head) {
+    border-radius: var(--radius-lg);
+  }
+  .admin-rail .rail-stats { grid-template-columns: 1fr; }
+  .student-evidence-preview,
+  .complaints-table .evidence-preview {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: 220px;
+  }
+}
+
+@media (max-width: 380px) {
+  .student-content,
+  .login-grid {
+    padding-inline: 12px;
+  }
+
+  .login-card,
+  .card,
+  .welcome-card {
+    padding: 16px;
+  }
+
+  button {
+    padding-inline: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

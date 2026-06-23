@@ -21,7 +21,6 @@ const categoryMap = {
   lainnya: "Lainnya",
 };
 
-
 const parseFinalData = (rawFinalData) => {
   if (!rawFinalData) return null;
   if (typeof rawFinalData === "object") return rawFinalData;
@@ -54,10 +53,6 @@ router.post("/message", auth(["student"]), async (req, res) => {
       history: history || [],
     };
 
-    // Logging: URL webhook dan Payload yang dikirim
-    console.log(`[Chatbot Info] Mengirim request ke webhook n8n: ${n8nUrl}`);
-    console.log(`[Chatbot Info] Payload yang dikirim: ${JSON.stringify(payload)}`);
-
     const n8nResponse = await fetch(n8nUrl, {
       method: "POST",
       headers: {
@@ -66,46 +61,35 @@ router.post("/message", auth(["student"]), async (req, res) => {
       body: JSON.stringify(payload),
     });
 
-    // Logging: Status code dari n8n
-    console.log(`[Chatbot Info] Status code response dari n8n: ${n8nResponse.status}`);
-
     if (!n8nResponse.ok) {
-      const errorText = await n8nResponse.text();
-      console.error(`[Chatbot Error] Request gagal dengan status ${n8nResponse.status}. Response: ${errorText}`);
+      console.error(`[Chatbot Error] Request gagal dengan status ${n8nResponse.status}.`);
       throw new Error(`n8n webhook merespons dengan status: ${n8nResponse.status}`);
     }
 
     const rawText = await n8nResponse.text();
     let responseData;
     try {
-      // Bersihkan string jika terbungkus kutip string mentah berlebih
       let cleanedText = rawText.trim();
       if (cleanedText.startsWith("'") && cleanedText.endsWith("'")) {
         cleanedText = cleanedText.slice(1, -1);
       }
       let parsed = JSON.parse(cleanedText);
       
-      // n8n terkadang membungkus JSON sebenarnya di dalam properti "output" sebagai string
       if (parsed.output && typeof parsed.output === "string") {
         responseData = JSON.parse(parsed.output);
       } else {
         responseData = parsed;
       }
     } catch (e) {
-      console.error("[Chatbot Error] Gagal parse JSON dari n8n. Teks mentah:", rawText);
+      console.error("[Chatbot Error] Gagal parse JSON dari n8n.");
       return res.status(500).json({ message: "Maaf, format data dari asisten AI sedang bermasalah." });
     }
 
-    // Debugging Log sesuai permintaan
-    console.log("[Chatbot Debug] Data dari n8n:", responseData);
-
-    // Jika status completed, otomatis panggil fungsi penyimpanan pengaduan
     if (responseData.status === "completed" && responseData.data) {
       try {
         const finalData = responseData.data;
         const rawCategory = String(finalData.kategori || "").trim().toLowerCase().replace(/\s+/g, "_");
         const category = categoryMap[rawCategory] || categoryMap["lainnya"];
-        console.log(`[Chatbot Debug] Kategori mentah: '${finalData.kategori}' -> normalized: '${rawCategory}' -> mapped: '${category}'`);
 
         const modeIdentitas = String(finalData.modeIdentitas || "").trim().toLowerCase();
         const urgency = String(finalData.urgensi || "").trim();
@@ -150,20 +134,16 @@ router.post("/message", auth(["student"]), async (req, res) => {
           updatedAt: now,
         };
 
-        // Jika frontend mengirim data bukti yang sudah diupload, lampirkan
         if (evidenceData && evidenceData.evidenceUrl) {
           payloadComplaint.evidenceUrl = evidenceData.evidenceUrl;
           payloadComplaint.evidenceType = evidenceData.evidenceType || "image/jpeg";
           payloadComplaint.evidenceName = evidenceData.evidenceName || "bukti.jpg";
-          console.log("[Chatbot Info] Menyertakan bukti dari upload:", evidenceData);
         }
 
         const result = await createComplaint(payloadComplaint);
         const created = await findComplaintById(result.insertedId);
         
-        // Opsional: Lampirkan data pengaduan yang berhasil dibuat ke dalam respons
         responseData.complaint = normalizeComplaint(created, { viewerRole: req.user.role });
-        console.log("[Chatbot Info] Pengaduan berhasil disimpan secara otomatis dengan ID:", result.insertedId);
       } catch (err) {
         console.error("[Chatbot Error] Gagal menyimpan otomatis pengaduan:", err);
       }
@@ -259,7 +239,6 @@ router.post(
   }
 );
 
-// Endpoint upload bukti selama sesi chat (sebelum laporan di-submit)
 router.post(
   "/upload-evidence",
   auth(["student"]),
@@ -276,7 +255,6 @@ router.post(
         evidenceName: req.file.originalname,
       };
 
-      console.log("[Chatbot Info] Bukti berhasil diupload:", fileData);
       return res.status(200).json({ success: true, file: fileData });
     } catch (error) {
       console.error("[Chatbot Error] Upload evidence error:", error);

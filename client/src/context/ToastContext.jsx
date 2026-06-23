@@ -1,11 +1,5 @@
-import { createContext, useCallback, useContext, useRef, useState } from "react";
-
-// ============================================================
-// Toast Context — Sistem notifikasi pop-up global
-// Digunakan sebagai pengganti window.alert() bawaan browser
-// ============================================================
-
-const ToastContext = createContext(null);
+import { useCallback, useRef, useState } from "react";
+import { ToastContext } from "./toastContext";
 
 const CheckIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -40,11 +34,6 @@ const TITLES = {
   error:   "Terjadi Kesalahan",
   info:    "Informasi",
 };
-
-/**
- * ToastProvider membungkus seluruh aplikasi agar setiap
- * komponen dapat memanggil fungsi toast tanpa prop drilling.
- */
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
   const counterRef = useRef(0);
@@ -104,10 +93,4 @@ export const ToastProvider = ({ children }) => {
       </div>
     </ToastContext.Provider>
   );
-};
-
-export const useToast = () => {
-  const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error("useToast must be used within ToastProvider");
-  return ctx;
 };

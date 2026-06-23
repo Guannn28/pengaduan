@@ -3,6 +3,7 @@ const {
   createComplaintHandler,
   deleteComplaint,
   downloadComplaintEvidence,
+  exportComplaintsToExcel,
   getStats,
   health,
   listComplaints,
@@ -21,6 +22,7 @@ router.post(
   uploadEvidence.single("evidence"),
   createComplaintHandler
 );
+router.get("/complaints/export/excel", auth(["admin"]), exportComplaintsToExcel);
 router.patch("/complaints/:id/status", auth(["admin"]), updateComplaintStatus);
 router.get(
   "/complaints/:id/evidence/download",

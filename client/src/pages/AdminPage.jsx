@@ -39,6 +39,7 @@ const AdminPage = ({
   datasetInsight,
   datasetInsightLoading,
   datasetInsightError,
+  handleExportComplaints,
   createUserForm,
   setCreateUserForm,
   handleCreateUser,
@@ -74,12 +75,12 @@ const AdminPage = ({
   const localizedInsight = datasetInsight
     ? {
         ...datasetInsight,
-        distributions: {
-          age: normalizeDatasetItems(datasetInsight.distributions?.age),
-          sex: normalizeDatasetItems(datasetInsight.distributions?.sex),
-          feltLonely: normalizeDatasetItems(datasetInsight.distributions?.feltLonely),
-          missSchool: normalizeDatasetItems(datasetInsight.distributions?.missSchool),
-        },
+        distributions: Object.fromEntries(
+          Object.entries(datasetInsight.distributions || {}).map(([key, items]) => [
+            key,
+            normalizeDatasetItems(items, key),
+          ])
+        ),
       }
     : null;
 
@@ -119,6 +120,7 @@ const AdminPage = ({
       datasetInsightError={datasetInsightError}
       showDatasetInsightDetail={showDatasetInsightDetail}
       setShowDatasetInsightDetail={setShowDatasetInsightDetail}
+      showAllCharts={adminView === "insight"}
     />
   );
 
@@ -189,6 +191,7 @@ const AdminPage = ({
           handleStatus={handleStatus}
           handleDelete={handleDelete}
           handleDownloadEvidence={handleDownloadEvidence}
+          handleExportComplaints={handleExportComplaints}
           setSelectedComplaint={setSelectedComplaint}
           error={error}
           successMessage={successMessage}
