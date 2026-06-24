@@ -218,8 +218,8 @@ export const api = {
       "Layanan asisten sedang sibuk, silakan coba beberapa saat lagi."
     );
 
-    if (!data || (!data.message && data.status !== "completed")) {
-      throw new Error("Format respons asisten tidak sesuai. Silakan coba lagi.");
+    if (!data || !data.success || !data.message) {
+      throw new Error(data?.message || "Format respons asisten tidak sesuai. Silakan coba lagi.");
     }
 
     return data;

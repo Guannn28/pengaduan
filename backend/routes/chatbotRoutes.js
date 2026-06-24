@@ -2,6 +2,7 @@ const express = require("express");
 const { auth } = require("../middleware/auth");
 const { uploadEvidence } = require("../middleware/upload");
 const { complaintCategories } = require("../constants");
+const env = require("../config/env");
 const { createComplaint, findComplaintById } = require("../models/complaintModel");
 const { parseObjectId } = require("../utils/objectId");
 const { normalizeComplaint } = require("../utils/serializers");
@@ -27,7 +28,7 @@ const categoryMap = {
 };
 
 const getN8nTimeoutMs = () => {
-  const value = Number(process.env.N8N_CHATBOT_TIMEOUT_MS);
+  const value = Number(env.N8N_CHATBOT_TIMEOUT_MS);
   return Number.isFinite(value) && value > 0 ? value : DEFAULT_N8N_TIMEOUT_MS;
 };
 
@@ -66,7 +67,19 @@ const parseJsonLikePayload = (value) => {
   }
 };
 
+const TEXT_FIELDS = ["output", "message", "reply", "response", "text"];
+
+const extractTextField = (obj) => {
+  for (const key of TEXT_FIELDS) {
+    if (obj[key] !== undefined && obj[key] !== null) {
+      return { key, value: obj[key] };
+    }
+  }
+  return null;
+};
+
 const normalizeN8nResponse = (payload) => {
+  // Handle arrays: N8N often returns [{ output: "..." }] or [{ json: { ... } }]
   if (Array.isArray(payload)) {
     if (payload.length === 0) {
       throw createChatbotError("CHATBOT_INVALID_RESPONSE", CHATBOT_INVALID_RESPONSE_MESSAGE);
@@ -74,6 +87,7 @@ const normalizeN8nResponse = (payload) => {
     return normalizeN8nResponse(payload[0]);
   }
 
+  // Handle raw strings (may be JSON or plain text)
   if (typeof payload === "string") {
     return normalizeN8nResponse(parseJsonLikePayload(payload));
   }
@@ -82,8 +96,25 @@ const normalizeN8nResponse = (payload) => {
     throw createChatbotError("CHATBOT_INVALID_RESPONSE", CHATBOT_INVALID_RESPONSE_MESSAGE);
   }
 
-  if (payload.output !== undefined) {
-    return normalizeN8nResponse(parseJsonLikePayload(payload.output));
+  // Handle N8N's common { json: { ... } } wrapper
+  if (payload.json !== undefined && typeof payload.json === "object" && payload.json !== null) {
+    return normalizeN8nResponse(payload.json);
+  }
+
+  // Try to find a known text field whose value is a stringified JSON or plain text
+  const found = extractTextField(payload);
+  if (found) {
+    const parsed = parseJsonLikePayload(found.value);
+    // If parsing produced a non-trivial object (not just { reply: sameString }),
+    // recurse to normalise it further. Otherwise keep current payload.
+    if (typeof parsed === "object" && parsed !== null) {
+      const isPassthrough =
+        Object.keys(parsed).length === 1 &&
+        parsed.reply === String(found.value);
+      if (!isPassthrough) {
+        return normalizeN8nResponse(parsed);
+      }
+    }
   }
 
   return payload;
@@ -92,13 +123,25 @@ const normalizeN8nResponse = (payload) => {
 const parseN8nResponseText = (rawText) => normalizeN8nResponse(parseJsonLikePayload(rawText));
 
 const getAssistantReply = (responseData) => {
-  const reply = responseData?.reply || responseData?.message || responseData?.response || responseData?.text;
-  if (typeof reply === "string" && reply.trim()) {
-    return reply.trim();
+  // Check all known text fields
+  for (const key of TEXT_FIELDS) {
+    const val = responseData?.[key];
+    if (typeof val === "string" && val.trim()) {
+      return val.trim();
+    }
   }
 
   if (responseData?.status === "completed" && responseData?.data) {
     return "Laporan sudah tersusun. Silakan periksa ringkasan sebelum dikirim.";
+  }
+
+  // Last resort: if the object has any string value at all, use it
+  if (responseData && typeof responseData === "object") {
+    for (const val of Object.values(responseData)) {
+      if (typeof val === "string" && val.trim().length > 0) {
+        return val.trim();
+      }
+    }
   }
 
   throw createChatbotError("CHATBOT_INVALID_RESPONSE", CHATBOT_INVALID_RESPONSE_MESSAGE);
@@ -149,7 +192,7 @@ router.post("/message", auth(["student"]), async (req, res) => {
       return res.status(400).json({ error: "Message tidak boleh kosong." });
     }
 
-    const n8nUrl = process.env.N8N_CHATBOT_WEBHOOK_URL;
+    const n8nUrl = env.N8N_CHATBOT_WEBHOOK_URL;
     if (!n8nUrl) {
       console.error("[Chatbot Error] N8N_CHATBOT_WEBHOOK_URL tidak dikonfigurasi di environment variables.");
       return res.status(503).json({ success: false, message: CHATBOT_FALLBACK_MESSAGE });

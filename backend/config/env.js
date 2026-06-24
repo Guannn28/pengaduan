@@ -48,4 +48,6 @@ module.exports = {
     .toLowerCase(),
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || "",
   UPLOADS_DIR: process.env.UPLOADS_DIR || "",
+  N8N_CHATBOT_WEBHOOK_URL: String(process.env.N8N_CHATBOT_WEBHOOK_URL || "").trim(),
+  N8N_CHATBOT_TIMEOUT_MS: process.env.N8N_CHATBOT_TIMEOUT_MS,
 };
