@@ -1,9 +1,14 @@
 import { formatDate } from "../../utils/formatters";
 
 const StudentAccountRow = ({ account, handleDeleteStudentAccount }) => (
-  <div className="table-slim student-account-row">
+  <div className="table-slim student-account-row admin-student-card">
     <span data-label="Nama">
       <strong>{account.name}</strong>
+      <p className="muted small student-account-mobile-meta">
+        {[account.username ? `@${account.username}` : null, account.className || null]
+          .filter(Boolean)
+          .join(" \u00b7 ") || "Data akun belum lengkap"}
+      </p>
     </span>
     <span data-label="Username">{account.username || "-"}</span>
     <span data-label="Kelas">{account.className || "-"}</span>

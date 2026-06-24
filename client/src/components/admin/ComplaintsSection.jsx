@@ -18,10 +18,13 @@ const ComplaintRow = ({
 }) => {
   const mediaUrl = complaint.evidenceUrl ? resolveMediaUrl(complaint.evidenceUrl) : "";
   const messagePreview = String(complaint.message || "").trim();
+  const evidenceLabel = complaint.evidenceName
+    ? `Ada bukti: ${complaint.evidenceName}`
+    : "Ada bukti";
   const urgency = getUrgencyValue(complaint);
 
   return (
-    <div className="table-slim complaints-row">
+    <div className="table-slim complaints-row admin-complaint-card">
       <span data-label="Pelapor">
         <strong>{complaint.name}</strong>
         <p className="muted small">
@@ -47,6 +50,7 @@ const ComplaintRow = ({
           <span className="muted small">Tidak ada</span>
         ) : (
           <div className="evidence-actions">
+            <span className="mobile-evidence-summary">{evidenceLabel}</span>
             {complaint.evidenceType?.startsWith("image/") ? (
               <img
                 className="evidence-preview"

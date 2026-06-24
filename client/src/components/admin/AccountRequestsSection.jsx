@@ -11,7 +11,7 @@ const AccountRequestRow = ({
   const isPending = request.status === "pending";
 
   return (
-    <div className="table-slim account-request-row">
+    <div className="table-slim account-request-row admin-request-card">
       <span data-label="Nama / Username">
         <strong>{request.name}</strong>
         <p className="muted small">{request.username || "-"}</p>
@@ -29,16 +29,21 @@ const AccountRequestRow = ({
       <span data-label="Lampiran">
         {!request.studentCardUrl ? (
           <span className="muted small">Tidak ada</span>
-        ) : request.studentCardType?.startsWith("image/") ? (
-          <img
-            className="evidence-thumb"
-            src={mediaUrl}
-            alt={request.studentCardName || "Kartu pelajar"}
-          />
         ) : (
-          <a href={mediaUrl} target="_blank" rel="noreferrer" className="ghost-link">
-            Lihat lampiran
-          </a>
+          <div className="request-attachment-preview">
+            <span className="mobile-evidence-summary">Kartu pelajar tersedia</span>
+            {request.studentCardType?.startsWith("image/") ? (
+              <img
+                className="evidence-thumb"
+                src={mediaUrl}
+                alt={request.studentCardName || "Kartu pelajar"}
+              />
+            ) : (
+              <a href={mediaUrl} target="_blank" rel="noreferrer" className="ghost-link">
+                Lihat lampiran
+              </a>
+            )}
+          </div>
         )}
       </span>
       <span className="admin-actions" data-label="Aksi">

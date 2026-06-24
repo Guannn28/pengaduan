@@ -14,6 +14,31 @@
   overflow-x: hidden;
 }
 
+body.mobile-nav-lock {
+  overflow: hidden;
+}
+
+.mobile-menu-button,
+.mobile-user-summary,
+.mobile-nav-overlay,
+.mobile-drawer,
+.mobile-bottom-nav {
+  display: none;
+}
+
+.mobile-section-anchor,
+.student-section-anchor {
+  scroll-margin-top: 86px;
+}
+
+.student-section-anchor {
+  min-width: 0;
+}
+
+.student-section-anchor > .card {
+  height: 100%;
+}
+
 img,
 video,
 svg {
@@ -647,6 +672,10 @@ button:focus-visible,
   font-size: clamp(22px, 3vw, 34px);
   font-weight: 800;
   letter-spacing: -0.4px;
+}
+
+.student-mobile-dashboard-summary {
+  display: none;
 }
 
 .admin-welcome-card {
@@ -1934,6 +1963,20 @@ button:focus-visible,
   gap: 8px;
 }
 
+.request-attachment-preview {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.student-account-mobile-meta {
+  display: none;
+}
+
+.mobile-evidence-summary {
+  display: none;
+}
+
 .evidence-thumb {
   width: 100%;
   max-width: 132px;
@@ -2129,6 +2172,817 @@ button:focus-visible,
 
   button {
     padding-inline: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  .student-shell,
+  .student-main,
+  .student-content,
+  .workspace-layout,
+  .workspace-main {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .student-header {
+    position: sticky;
+    top: 0;
+    z-index: 43;
+    min-height: 64px;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.94);
+  }
+
+  .student-header .brand-inline,
+  .admin-header .brand-inline {
+    width: auto;
+    min-width: 0;
+    flex: 1 1 auto;
+    gap: 9px;
+  }
+
+  .student-header .brand-logo {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-md);
+  }
+
+  .student-header .brand-text {
+    min-width: 0;
+  }
+
+  .student-header .brand-text .muted {
+    display: none;
+  }
+
+  .student-header .title {
+    max-width: 150px;
+    overflow: hidden;
+    font-size: 15px;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .student-header .header-actions,
+  .admin-header .header-actions {
+    display: none;
+  }
+
+  .mobile-menu-button,
+  .mobile-user-summary {
+    display: inline-flex;
+  }
+
+  .mobile-menu-button {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    flex: 0 0 44px;
+    padding: 0;
+    border-color: rgba(13, 27, 42, 0.12);
+    border-radius: var(--radius-md);
+    background: var(--navy-900);
+    color: #ffffff;
+    box-shadow: var(--shadow-xs);
+  }
+
+  .mobile-menu-button:hover:not(:disabled),
+  .mobile-drawer-close:hover:not(:disabled),
+  .mobile-drawer-link:hover:not(:disabled),
+  .mobile-drawer-logout:hover:not(:disabled),
+  .mobile-bottom-nav-item:hover:not(:disabled),
+  .mobile-nav-overlay:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .mobile-user-summary {
+    min-width: 0;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 7px;
+  }
+
+  .mobile-user-summary span {
+    max-width: 86px;
+    overflow: hidden;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-user-summary .avatar.sm {
+    width: 34px;
+    height: 34px;
+  }
+
+  .mobile-nav-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 44;
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
+    background: rgba(13, 27, 42, 0.56);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-normal);
+  }
+
+  .mobile-nav-overlay.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .mobile-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 45;
+    display: flex;
+    width: min(78vw, 320px);
+    height: 100vh;
+    height: 100dvh;
+    flex-direction: column;
+    gap: 14px;
+    overflow-y: auto;
+    padding: 16px;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(160deg, var(--navy-700) 0%, var(--navy-900) 100%);
+    box-shadow: 24px 0 60px rgba(13, 27, 42, 0.28);
+    color: #ffffff;
+    transform: translateX(-105%);
+    visibility: hidden;
+    transition:
+      transform var(--transition-normal),
+      visibility 0s linear 0.25s;
+  }
+
+  .mobile-drawer.is-open {
+    transform: translateX(0);
+    visibility: visible;
+    transition:
+      transform var(--transition-normal),
+      visibility 0s;
+  }
+
+  .mobile-drawer-head,
+  .mobile-drawer-brand,
+  .mobile-drawer-profile {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+  }
+
+  .mobile-drawer-head {
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .mobile-drawer-brand {
+    gap: 10px;
+  }
+
+  .mobile-drawer-brand .brand-logo {
+    width: 38px;
+    height: 38px;
+  }
+
+  .mobile-drawer-brand strong,
+  .mobile-drawer-profile strong {
+    display: block;
+    color: #ffffff;
+    line-height: 1.2;
+  }
+
+  .mobile-drawer .muted,
+  .mobile-drawer-profile span,
+  .mobile-drawer-stats span {
+    color: rgba(255, 255, 255, 0.68);
+  }
+
+  .mobile-drawer-close {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    flex: 0 0 40px;
+    padding: 0;
+    border-color: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+  }
+
+  .mobile-drawer-profile {
+    gap: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 12px;
+  }
+
+  .mobile-drawer-profile .muted {
+    margin: 0 0 3px;
+  }
+
+  .mobile-drawer-profile .rail-avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 13px;
+  }
+
+  .mobile-drawer-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .mobile-drawer-stats div {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.055);
+    padding: 9px 8px;
+  }
+
+  .mobile-drawer-stats span {
+    overflow: hidden;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-drawer-stats strong {
+    color: var(--gold-400);
+    font-size: 19px;
+    line-height: 1;
+  }
+
+  .mobile-drawer-menu {
+    display: grid;
+    gap: 8px;
+  }
+
+  .mobile-drawer-link,
+  .mobile-drawer-logout {
+    width: 100%;
+    min-height: 46px;
+    justify-content: flex-start;
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.055);
+    color: rgba(255, 255, 255, 0.86);
+    padding: 10px 12px;
+    text-align: left;
+  }
+
+  .mobile-drawer-link.active {
+    border-color: rgba(242, 195, 107, 0.38);
+    background: var(--gold-400);
+    color: var(--navy-900);
+    box-shadow: 0 8px 20px rgba(242, 195, 107, 0.16);
+  }
+
+  .mobile-drawer-link:hover:not(:disabled),
+  .mobile-drawer-logout:hover:not(:disabled) {
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.11);
+    box-shadow: none;
+  }
+
+  .mobile-drawer-link.active:hover:not(:disabled) {
+    background: var(--gold-400);
+    color: var(--navy-900);
+  }
+
+  .mobile-drawer-logout {
+    margin-top: auto;
+    border-color: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .student-content {
+    gap: 14px;
+    padding: 14px 14px calc(104px + env(safe-area-inset-bottom));
+  }
+
+  .admin-content {
+    padding-top: 14px;
+  }
+
+  .workspace-layout,
+  .admin-workspace-layout {
+    display: block;
+  }
+
+  .workspace-layout > .overview-rail,
+  .admin-workspace-layout > .admin-rail {
+    display: none;
+  }
+
+  .workspace-main,
+  .admin-workspace-main {
+    gap: 14px;
+  }
+
+  .welcome-card {
+    padding: 16px;
+  }
+
+  .welcome-card h2 {
+    font-size: 22px;
+    line-height: 1.18;
+  }
+
+  .admin-welcome-card h2 {
+    font-size: 20px;
+  }
+
+  .student-grid {
+    display: block;
+  }
+
+  .student-mobile-section {
+    display: none;
+  }
+
+  .student-content[data-mobile-view="dashboard"] .student-dashboard-section {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .student-content[data-mobile-view="chatbot"] .student-chatbot-section,
+  .student-content[data-mobile-view="history"] .student-history-section {
+    display: block;
+  }
+
+  .student-mobile-dashboard-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  .student-mobile-dashboard-summary div {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+    border: 1px solid rgba(46, 124, 120, 0.14);
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.72);
+    padding: 11px 10px;
+  }
+
+  .student-mobile-dashboard-summary span {
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .student-mobile-dashboard-summary strong {
+    color: var(--navy-900);
+    font-size: 24px;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .student-mobile-refresh {
+    grid-column: 1 / -1;
+    justify-content: center;
+    width: 100%;
+    min-height: 42px;
+  }
+
+  .mobile-section-anchor,
+  .student-section-anchor {
+    scroll-margin-top: 78px;
+  }
+
+  .assistant-card,
+  .schedule-card {
+    width: 100%;
+  }
+
+  .student-content[data-mobile-view="chatbot"] .assistant-card {
+    min-height: calc(100dvh - 188px);
+  }
+
+  .student-content[data-mobile-view="chatbot"] .chat-panel {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+  }
+
+  .chat-window {
+    min-height: 236px;
+    max-height: min(42vh, 360px);
+  }
+
+  .student-content[data-mobile-view="chatbot"] .chat-window {
+    flex: 1 1 auto;
+    max-height: min(44vh, 360px);
+  }
+
+  .table-card {
+    max-width: 100%;
+  }
+
+  .student-evidence-preview,
+  .complaints-table .evidence-preview {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: 220px;
+  }
+
+  .complaints-table,
+  .account-request-table,
+  .student-account-table {
+    display: grid;
+    gap: 10px;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .account-requests-card,
+  .admin-content .schedule-card {
+    padding: 16px;
+  }
+
+  .admin-content .card-head {
+    gap: 8px;
+  }
+
+  .admin-content .card-head h3 {
+    font-size: 17px;
+    line-height: 1.25;
+  }
+
+  .admin-content .card-head .muted {
+    margin-top: 3px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .admin-table .admin-complaint-card,
+  .admin-table .admin-request-card,
+  .admin-table .admin-student-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 10px;
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    padding: 12px;
+  }
+
+  .admin-table .admin-complaint-card > span,
+  .admin-table .admin-request-card > span,
+  .admin-table .admin-student-card > span {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-table .admin-complaint-card > span::before,
+  .admin-table .admin-request-card > span::before,
+  .admin-table .admin-student-card > span::before {
+    display: none;
+  }
+
+  .admin-table .admin-complaint-card strong,
+  .admin-table .admin-request-card strong,
+  .admin-table .admin-student-card strong {
+    color: var(--navy-900);
+    font-size: 15px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-table .admin-complaint-card .muted,
+  .admin-table .admin-request-card .muted,
+  .admin-table .admin-student-card .muted {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.3;
+  }
+
+  .admin-complaint-card > [data-label="Pelapor"],
+  .admin-request-card > [data-label="Nama / Username"],
+  .admin-student-card > [data-label="Nama"] {
+    grid-column: 1;
+  }
+
+  .admin-complaint-card > [data-label="Status"],
+  .admin-request-card > [data-label="Status"],
+  .admin-student-card > [data-label="Status"] {
+    grid-column: 2;
+    grid-row: 1;
+    justify-items: end;
+    align-self: start;
+  }
+
+  .admin-complaint-card > [data-label="Pesan"],
+  .admin-complaint-card > [data-label="Bukti"],
+  .admin-complaint-card > [data-label="Aksi"],
+  .admin-request-card > [data-label="Lampiran"],
+  .admin-request-card > [data-label="Aksi"],
+  .admin-student-card > [data-label="Aksi"] {
+    grid-column: 1 / -1;
+  }
+
+  .admin-complaint-card > [data-label="Kategori"] {
+    grid-column: 1;
+  }
+
+  .admin-complaint-card > [data-label="Tanggal"] {
+    grid-column: 2;
+    justify-items: end;
+    align-self: start;
+    text-align: right;
+  }
+
+  .admin-request-card > [data-label="Kelas"],
+  .admin-request-card > [data-label="Tanggal Pengajuan"] {
+    grid-column: auto;
+  }
+
+  .student-account-mobile-meta {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-table .admin-student-card > [data-label="Username"],
+  .admin-table .admin-student-card > [data-label="Kelas"] {
+    display: none;
+  }
+
+  .admin-student-card > [data-label="Tanggal Dibuat"] {
+    grid-column: 1 / -1;
+    color: var(--text-muted);
+  }
+
+  .admin-complaint-card .complaint-message-preview {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    max-height: calc(1.45em * 2);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .admin-complaint-card .complaint-detail-button {
+    margin-top: 2px;
+    font-size: 12px;
+  }
+
+  .admin-complaint-card .badge,
+  .admin-request-card .badge,
+  .admin-student-card .badge {
+    padding: 4px 8px;
+    font-size: 11px;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  .admin-complaint-card .badge.urgency {
+    margin-top: 3px;
+    width: fit-content;
+  }
+
+  .admin-complaint-card .evidence-actions,
+  .admin-request-card .request-attachment-preview {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+  }
+
+  .mobile-evidence-summary {
+    display: block;
+    grid-column: 2;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-complaint-card .evidence-preview,
+  .admin-request-card .evidence-thumb {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: 44px;
+    max-width: 44px;
+    height: 44px;
+    max-height: 44px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+  }
+
+  .admin-complaint-card .evidence-actions .small-btn,
+  .admin-complaint-card .evidence-actions .ghost-link,
+  .admin-request-card .ghost-link {
+    grid-column: 2;
+    width: fit-content;
+  }
+
+  .admin-complaint-card .admin-actions,
+  .admin-request-card .admin-actions,
+  .admin-student-card .admin-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .admin-complaint-card .admin-actions select {
+    flex: 1 1 150px;
+    width: auto;
+    min-width: 0;
+    min-height: 36px;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .admin-complaint-card .admin-actions button,
+  .admin-request-card .admin-actions button,
+  .admin-student-card .admin-actions button {
+    flex: 0 0 auto;
+    width: auto;
+    min-height: 36px;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .mobile-bottom-nav {
+    position: fixed;
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    left: 10px;
+    z-index: 42;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    min-height: 68px;
+    padding: 7px;
+    border: 1px solid rgba(15, 30, 50, 0.11);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 14px 36px rgba(13, 27, 42, 0.16);
+    backdrop-filter: blur(18px) saturate(1.25);
+    -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  }
+
+  .admin-mobile-bottom-nav {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .mobile-bottom-nav-item {
+    min-width: 0;
+    min-height: 52px;
+    flex-direction: column;
+    gap: 3px;
+    border-color: transparent;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 6px 4px;
+    font-size: 11px;
+    line-height: 1.1;
+    overflow-wrap: normal;
+  }
+
+  .mobile-bottom-nav-item span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-bottom-nav-item.active {
+    background: var(--navy-900);
+    color: #ffffff;
+    box-shadow: var(--shadow-xs);
+  }
+
+  .mobile-bottom-nav-item:hover:not(:disabled) {
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  .mobile-bottom-nav-item.active:hover:not(:disabled) {
+    background: var(--navy-900);
+  }
+
+  .toast-container {
+    bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 420px) {
+  .student-header {
+    padding-inline: 10px;
+  }
+
+  .student-header .title {
+    max-width: 124px;
+    font-size: 14px;
+  }
+
+  .mobile-user-summary span {
+    display: none;
+  }
+
+  .student-content {
+    padding-inline: 12px;
+    padding-bottom: calc(98px + env(safe-area-inset-bottom));
+  }
+
+  .welcome-card,
+  .card {
+    padding: 16px;
+  }
+
+  .mobile-drawer {
+    width: min(82vw, 320px);
+    padding: 14px;
+  }
+
+  .mobile-drawer-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-bottom-nav {
+    right: 8px;
+    left: 8px;
+    min-height: 66px;
+    padding: 6px;
+  }
+
+  .mobile-bottom-nav-item {
+    min-height: 50px;
+    padding-inline: 3px;
+    font-size: 10px;
+  }
+
+  .admin-table .admin-complaint-card,
+  .admin-table .admin-request-card,
+  .admin-table .admin-student-card {
+    gap: 7px 8px;
+    padding: 10px;
+  }
+
+  .admin-content .schedule-card,
+  .account-requests-card {
+    padding: 14px;
+  }
+
+  .admin-complaint-card .evidence-actions,
+  .admin-request-card .request-attachment-preview {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .admin-complaint-card .evidence-preview,
+  .admin-request-card .evidence-thumb {
+    width: 38px;
+    max-width: 38px;
+    height: 38px;
+    max-height: 38px;
+  }
+
+  .chat-window {
+    min-height: 220px;
+    max-height: 330px;
   }
 }
 

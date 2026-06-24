@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { FileText, Home, LogOut, Menu, UserPlus, Users, X } from "lucide-react";
 import AccountRequestsSection from "../components/admin/AccountRequestsSection";
 import AdminDashboard from "../components/admin/AdminDashboard";
 import AdminSidebar from "../components/admin/AdminSidebar";
@@ -10,6 +11,13 @@ import {
   complaintDetailLabels,
   parseComplaintMessage,
 } from "../utils/formatters";
+
+const adminMobileNavMeta = {
+  dashboard: { icon: Home, shortLabel: "Dashboard" },
+  "account-requests": { icon: UserPlus, shortLabel: "Pengajuan" },
+  "student-accounts": { icon: Users, shortLabel: "Siswa" },
+  complaints: { icon: FileText, shortLabel: "Pengaduan" },
+};
 
 const AdminPage = ({
   user,
@@ -45,6 +53,7 @@ const AdminPage = ({
   successMessage,
 }) => {
   const [selectedComplaint, setSelectedComplaint] = useState(null);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   const pendingAccountRequests = accountRequests.filter((item) => item.status === "pending");
 
@@ -93,7 +102,42 @@ const AdminPage = ({
   }, [selectedComplaint]);
 
   const currentView = adminNavItems.find((item) => item.value === adminView) || adminNavItems[0];
+  const mobileAdminNavItems = adminNavItems.map((item) => ({
+    ...item,
+    icon: adminMobileNavMeta[item.value]?.icon || FileText,
+    shortLabel: adminMobileNavMeta[item.value]?.shortLabel || item.label,
+  }));
   const recentComplaints = complaints.slice(0, 5);
+
+  useEffect(() => {
+    document.body.classList.toggle("mobile-nav-lock", isMobileNavOpen);
+    return () => document.body.classList.remove("mobile-nav-lock");
+  }, [isMobileNavOpen]);
+
+  useEffect(() => {
+    if (!isMobileNavOpen) {
+      return undefined;
+    }
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setIsMobileNavOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [isMobileNavOpen]);
+
+  const closeMobileNav = () => setIsMobileNavOpen(false);
+
+  const handleMobileAdminSelect = (view) => {
+    setAdminView(view);
+    closeMobileNav();
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  };
 
   const renderView = () => {
     if (adminView === "dashboard") {
@@ -172,6 +216,15 @@ const AdminPage = ({
     <div className="student-shell">
       <div className="student-main">
         <header className="student-header admin-header">
+          <button
+            className="mobile-menu-button"
+            type="button"
+            onClick={() => setIsMobileNavOpen(true)}
+            aria-label="Buka menu admin"
+            title="Buka menu"
+          >
+            <Menu size={21} strokeWidth={2.5} />
+          </button>
           <div className="brand-inline admin-brand">
             <img className="brand-logo" src="/logo-sma.jpg" alt="SMA Logo" />
             <div className="brand-text">
@@ -190,7 +243,89 @@ const AdminPage = ({
               Keluar
             </button>
           </div>
+          <div className="mobile-user-summary admin-mobile-user-summary" aria-label="Profil admin">
+            <span>Admin</span>
+            <div className="avatar sm">AD</div>
+          </div>
         </header>
+
+        <button
+          className={isMobileNavOpen ? "mobile-nav-overlay is-open" : "mobile-nav-overlay"}
+          type="button"
+          onClick={closeMobileNav}
+          aria-label="Tutup menu admin"
+          tabIndex={isMobileNavOpen ? 0 : -1}
+        />
+
+        <aside
+          className={isMobileNavOpen ? "mobile-drawer admin-mobile-drawer is-open" : "mobile-drawer admin-mobile-drawer"}
+          aria-hidden={!isMobileNavOpen}
+        >
+          <div className="mobile-drawer-head">
+            <div className="mobile-drawer-brand">
+              <img className="brand-logo" src="/logo-sma.jpg" alt="SMA Logo" />
+              <div>
+                <p className="muted small">Panel admin</p>
+                <strong>SMA Negeri 1 Bangunrejo</strong>
+              </div>
+            </div>
+            <button
+              className="mobile-drawer-close"
+              type="button"
+              onClick={closeMobileNav}
+              aria-label="Tutup menu"
+              title="Tutup menu"
+            >
+              <X size={19} strokeWidth={2.5} />
+            </button>
+          </div>
+
+          <div className="mobile-drawer-profile">
+            <div className="avatar rail-avatar">AD</div>
+            <div>
+              <p className="muted small">Admin</p>
+              <strong>{user?.name}</strong>
+              <span>Pengelola laporan sekolah</span>
+            </div>
+          </div>
+
+          <div className="mobile-drawer-stats">
+            <div>
+              <span>Akun baru</span>
+              <strong>{pendingAccountRequests.length}</strong>
+            </div>
+            <div>
+              <span>Diproses</span>
+              <strong>{complaintStats.inProgress}</strong>
+            </div>
+            <div>
+              <span>Pengaduan</span>
+              <strong>{complaintStats.total}</strong>
+            </div>
+          </div>
+
+          <nav className="mobile-drawer-menu" aria-label="Navigasi admin">
+            {mobileAdminNavItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.value}
+                  type="button"
+                  className={adminView === item.value ? "mobile-drawer-link active" : "mobile-drawer-link"}
+                  onClick={() => handleMobileAdminSelect(item.value)}
+                >
+                  <Icon size={18} strokeWidth={2.35} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          <button className="mobile-drawer-logout" type="button" onClick={logout}>
+            <LogOut size={18} strokeWidth={2.35} />
+            <span>Keluar</span>
+          </button>
+        </aside>
 
         <main className="student-content admin-content">
           <section className="workspace-layout admin-workspace-layout">
@@ -229,6 +364,23 @@ const AdminPage = ({
             </div>
           </section>
         </main>
+
+        <nav className="mobile-bottom-nav admin-mobile-bottom-nav" aria-label="Navigasi utama admin">
+          {mobileAdminNavItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.value}
+                type="button"
+                className={adminView === item.value ? "mobile-bottom-nav-item active" : "mobile-bottom-nav-item"}
+                onClick={() => handleMobileAdminSelect(item.value)}
+              >
+                <Icon size={19} strokeWidth={2.4} />
+                <span>{item.shortLabel}</span>
+              </button>
+            );
+          })}
+        </nav>
 
         <ComplaintDetailModal
           role="admin"
