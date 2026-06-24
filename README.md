@@ -50,7 +50,7 @@ Pastikan udah install **Node.js** dan **MongoDB**.
 
 **1. Clone Repo**
 ```bash
-git clone <url-repo-kamu>
+git clone <url-repo>
 cd pengaduan
 ```
 
