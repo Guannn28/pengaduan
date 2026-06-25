@@ -7,28 +7,34 @@ import {
 import { RefreshCw, FileX, Search } from "lucide-react";
 const EvidencePreview = ({ complaint, resolveMediaUrl }) => {
   if (!complaint.evidenceUrl) {
-    return <span className="muted small">Tidak ada bukti</span>;
+    return <span className="muted small student-evidence-empty">Tidak ada bukti</span>;
   }
 
   const mediaUrl = resolveMediaUrl(complaint.evidenceUrl);
   if (complaint.evidenceType?.startsWith("image/")) {
     return (
-      <img
-        className="student-evidence-preview"
-        src={mediaUrl}
-        alt={complaint.evidenceName || "Bukti pengaduan"}
-      />
+      <span className="student-evidence-inline">
+        <img
+          className="student-evidence-preview"
+          src={mediaUrl}
+          alt={complaint.evidenceName || "Bukti pengaduan"}
+        />
+        <span className="student-evidence-chip">Bukti tersedia</span>
+      </span>
     );
   }
 
   if (complaint.evidenceType?.startsWith("video/")) {
     return (
-      <video className="student-evidence-preview" src={mediaUrl} controls preload="metadata" />
+      <span className="student-evidence-inline">
+        <video className="student-evidence-preview" src={mediaUrl} controls preload="metadata" />
+        <span className="student-evidence-chip">Bukti tersedia</span>
+      </span>
     );
   }
 
   return (
-    <a href={mediaUrl} target="_blank" rel="noreferrer" className="ghost-link">
+    <a href={mediaUrl} target="_blank" rel="noreferrer" className="ghost-link student-evidence-link">
       Lihat bukti
     </a>
   );
@@ -120,7 +126,7 @@ const StudentComplaintList = ({
           const urgency = getUrgencyValue(complaint);
 
           return (
-            <div key={complaint.id} className="table-slim student-complaints-row">
+            <div key={complaint.id} className="table-slim student-complaints-row student-history-card student-report-card">
               <span data-label="Status">
                 <span className={statusColor[complaint.status] || "badge"}>
                   {getStatusLabel(statusOptions, complaint.status)}

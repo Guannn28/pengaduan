@@ -1549,6 +1549,7 @@ button:focus-visible,
 
 .student-detail-button {
   margin-top: 8px;
+  min-height: 0;
   padding: 0;
   border: none;
   background: transparent;
@@ -1581,6 +1582,21 @@ button:focus-visible,
 
 .student-evidence-preview:hover { transform: scale(1.04); }
 .student-evidence-preview-large { width: min(100%, 420px); max-width: 420px; height: auto; max-height: 280px; }
+
+.student-evidence-inline {
+  display: inline-grid;
+  max-width: 100%;
+}
+
+.student-evidence-chip {
+  display: none;
+}
+
+.student-evidence-empty,
+.student-evidence-link {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
 
 .student-complaint-modal {
   position: fixed;
@@ -2613,6 +2629,223 @@ button:focus-visible,
     max-height: 220px;
   }
 
+  .student-content[data-mobile-view="history"] {
+    padding-bottom: calc(128px + env(safe-area-inset-bottom));
+  }
+
+  .student-content[data-mobile-view="history"] .student-history-section > .schedule-card {
+    height: auto;
+    padding: 12px;
+  }
+
+  .student-content[data-mobile-view="history"] .card-head {
+    gap: 8px;
+  }
+
+  .student-content[data-mobile-view="history"] .card-head h3 {
+    font-size: 17px;
+    line-height: 1.2;
+  }
+
+  .student-content[data-mobile-view="history"] .card-head .muted {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .student-content[data-mobile-view="history"] .filters {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .student-content[data-mobile-view="history"] .filters label {
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  .student-content[data-mobile-view="history"] .filters select,
+  .student-content[data-mobile-view="history"] .filters button {
+    width: auto;
+    min-height: 36px;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .student-content[data-mobile-view="history"] .filters select {
+    min-width: 0;
+  }
+
+  .student-complaints-table {
+    display: grid;
+    gap: 10px;
+    margin-top: 10px;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .student-complaints-table .student-report-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 10px;
+    min-width: 0;
+    align-items: start;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    padding: 10px 11px;
+    box-shadow: var(--shadow-xs);
+  }
+
+  .student-complaints-table .student-report-card:hover {
+    background: var(--bg-surface);
+  }
+
+  .student-complaints-table .student-report-card > span {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  .student-complaints-table .student-report-card > span::before {
+    display: none;
+  }
+
+  .student-complaints-table .student-report-card > [data-label="Kategori"] {
+    grid-column: 1;
+    grid-row: 1;
+    color: var(--navy-900);
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  .student-complaints-table .student-report-card > [data-label="Status"] {
+    grid-column: 2;
+    grid-row: 1;
+    justify-items: end;
+    align-self: start;
+  }
+
+  .student-complaints-table .student-report-card > [data-label="Tipe"] {
+    grid-column: 1;
+    grid-row: 2;
+    font-size: 12px;
+    line-height: 1.25;
+  }
+
+  .student-complaints-table .student-report-card > [data-label="Tanggal"] {
+    grid-column: 2;
+    grid-row: 2;
+    justify-items: end;
+    align-self: start;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.25;
+    text-align: right;
+  }
+
+  .student-complaints-table .student-report-card > [data-label="Pesan"] {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    gap: 4px;
+  }
+
+  .student-complaints-table .student-report-card > [data-label="Bukti"] {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+  }
+
+  .student-complaints-table .student-report-card .student-message-preview {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    max-height: calc(1.42em * 2);
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.42;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  .student-complaints-table .student-report-card .student-message-preview + .badge {
+    margin-top: 2px;
+  }
+
+  .student-complaints-table .student-report-card .badge {
+    max-width: 116px;
+    justify-content: center;
+    overflow: hidden;
+    padding: 4px 8px;
+    font-size: 11px;
+    line-height: 1.1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .student-complaints-table .student-report-card .badge.urgency {
+    width: fit-content;
+    max-width: 100%;
+    margin-top: 0;
+  }
+
+  .student-complaints-table .student-report-card .student-detail-button {
+    width: fit-content;
+    min-height: 30px;
+    margin-top: 0;
+    font-size: 12px;
+    line-height: 1.1;
+  }
+
+  .student-complaints-table .student-report-card .student-evidence-inline {
+    display: inline-grid;
+    grid-template-columns: 52px minmax(0, auto);
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+  }
+
+  .student-complaints-table .student-report-card .student-evidence-preview {
+    width: 52px;
+    max-width: 52px;
+    height: 52px;
+    max-height: 52px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+  }
+
+  .student-complaints-table .student-report-card .student-evidence-preview:hover {
+    transform: none;
+  }
+
+  .student-complaints-table .student-report-card .student-evidence-chip {
+    display: inline-flex;
+    width: fit-content;
+    max-width: 100%;
+    border-radius: var(--radius-pill);
+    background: #e6ebf0;
+    color: var(--navy-700);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.1;
+    padding: 4px 8px;
+    white-space: nowrap;
+  }
+
+  .student-complaints-table .student-report-card .student-evidence-empty,
+  .student-complaints-table .student-report-card .student-evidence-link {
+    font-size: 12px;
+    line-height: 1.25;
+  }
+
   .complaints-table,
   .account-request-table,
   .student-account-table {
@@ -2931,6 +3164,43 @@ button:focus-visible,
   .welcome-card,
   .card {
     padding: 16px;
+  }
+
+  .student-content[data-mobile-view="history"] {
+    padding-bottom: calc(122px + env(safe-area-inset-bottom));
+  }
+
+  .student-content[data-mobile-view="history"] .student-history-section > .schedule-card {
+    padding: 10px;
+  }
+
+  .student-complaints-table {
+    gap: 10px;
+  }
+
+  .student-complaints-table .student-report-card {
+    gap: 5px 8px;
+    padding: 10px;
+  }
+
+  .student-complaints-table .student-report-card > [data-label="Kategori"] {
+    font-size: 15px;
+  }
+
+  .student-complaints-table .student-report-card .badge {
+    max-width: 106px;
+    padding-inline: 7px;
+  }
+
+  .student-complaints-table .student-report-card .student-evidence-inline {
+    grid-template-columns: 44px minmax(0, auto);
+  }
+
+  .student-complaints-table .student-report-card .student-evidence-preview {
+    width: 44px;
+    max-width: 44px;
+    height: 44px;
+    max-height: 44px;
   }
 
   .mobile-drawer {
