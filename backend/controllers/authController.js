@@ -21,6 +21,11 @@ const {
   normalizeUser,
 } = require("../utils/serializers");
 const { parseObjectId } = require("../utils/objectId");
+const {
+  cloudinaryFolders,
+  deleteCloudinaryAsset,
+  uploadBufferToCloudinary,
+} = require("../utils/cloudinary");
 
 const createSession = async (userId) => {
   const token = generateToken();
@@ -52,13 +57,20 @@ const register = async (req, res) => {
       return res.status(409).json({ error: "Permohonan akun untuk username ini masih menunggu admin." });
     }
 
+    const uploadedStudentCard = await uploadBufferToCloudinary(
+      req.file,
+      cloudinaryFolders.studentCards
+    );
+
     const now = new Date();
     const payload = {
       name: String(name).trim(),
       username: normalizedUsername,
       className: String(className).trim(),
       contactPhone: String(contactPhone).trim(),
-      studentCardUrl: `/uploads/account-requests/${req.file.filename}`,
+      studentCardUrl: uploadedStudentCard.secureUrl,
+      studentCardPublicId: uploadedStudentCard.publicId,
+      studentCardResourceType: uploadedStudentCard.resourceType,
       studentCardType: req.file.mimetype,
       studentCardName: req.file.originalname,
       status: "pending",
@@ -229,6 +241,13 @@ const deleteAccountRequest = async (req, res) => {
     }
 
     await deleteAccountRequestById(objectId);
+    if (existing.studentCardPublicId) {
+      try {
+        await deleteCloudinaryAsset(existing.studentCardPublicId, existing.studentCardResourceType);
+      } catch (cloudinaryError) {
+        console.warn("Delete Cloudinary student card warning", cloudinaryError.message);
+      }
+    }
     return res.json({ success: true });
   } catch (err) {
     console.error("Delete account request error", err);

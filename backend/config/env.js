@@ -48,6 +48,9 @@ module.exports = {
     .toLowerCase(),
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || "",
   UPLOADS_DIR: process.env.UPLOADS_DIR || "",
+  CLOUDINARY_CLOUD_NAME: String(process.env.CLOUDINARY_CLOUD_NAME || "").trim(),
+  CLOUDINARY_API_KEY: String(process.env.CLOUDINARY_API_KEY || "").trim(),
+  CLOUDINARY_API_SECRET: String(process.env.CLOUDINARY_API_SECRET || "").trim(),
   N8N_CHATBOT_WEBHOOK_URL: String(process.env.N8N_CHATBOT_WEBHOOK_URL || "").trim(),
   N8N_CHATBOT_TIMEOUT_MS: process.env.N8N_CHATBOT_TIMEOUT_MS,
 };

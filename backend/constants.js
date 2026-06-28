@@ -16,6 +16,7 @@ const accountRequestStatuses = ["pending", "reviewed"];
 
 const allowedEvidenceMimeTypes = new Set([
   "image/jpeg",
+  "image/jpg",
   "image/png",
   "image/webp",
   "image/gif",

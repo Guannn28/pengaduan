@@ -15,6 +15,27 @@ const { findUsersByIds } = require("../models/userModel");
 const { parseObjectId } = require("../utils/objectId");
 const { normalizeComplaint } = require("../utils/serializers");
 const { getLocalEvidencePath, removeLocalEvidence } = require("../utils/fileStorage");
+const {
+  cloudinaryFolders,
+  deleteCloudinaryAsset,
+  uploadBufferToCloudinary,
+} = require("../utils/cloudinary");
+
+const isRemoteUrl = (value) => /^https?:\/\//i.test(String(value || ""));
+
+const isCloudinaryUrl = (value) => {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.hostname === "res.cloudinary.com";
+  } catch (_error) {
+    return false;
+  }
+};
+
+const getSafeDownloadName = (value) =>
+  path.basename(String(value || "bukti-pengaduan")).replace(/[\r\n"]/g, "_") ||
+  "bukti-pengaduan";
+
 const health = async (_req, res) => {
   const dbState = getDbState();
   res.json({
@@ -56,6 +77,11 @@ const createComplaintHandler = async (req, res) => {
       String(isAnonymous).trim().toLowerCase() === "true" ||
       String(isAnonymous).trim() === "1";
 
+    const uploadedEvidence = await uploadBufferToCloudinary(
+      req.file,
+      cloudinaryFolders.complaintEvidence
+    );
+
     const now = new Date();
     const result = await createComplaint({
       userId: parseObjectId(req.user.id),
@@ -64,7 +90,9 @@ const createComplaintHandler = async (req, res) => {
       isAnonymous: normalizedAnonymous,
       category: normalizedCategory,
       message: String(message).trim(),
-      evidenceUrl: `/uploads/complaints/${req.file.filename}`,
+      evidenceUrl: uploadedEvidence.secureUrl,
+      evidencePublicId: uploadedEvidence.publicId,
+      evidenceResourceType: uploadedEvidence.resourceType,
       evidenceType: req.file.mimetype,
       evidenceName: req.file.originalname,
       status: "submitted",
@@ -117,6 +145,25 @@ const downloadComplaintEvidence = async (req, res) => {
       return res.status(404).json({ error: "File bukti tidak tersedia." });
     }
 
+    if (isRemoteUrl(complaint.evidenceUrl)) {
+      if (!isCloudinaryUrl(complaint.evidenceUrl)) {
+        return res.status(400).json({ error: "URL bukti bukan URL Cloudinary yang valid." });
+      }
+
+      const response = await fetch(complaint.evidenceUrl);
+      if (!response.ok) {
+        return res.status(404).json({ error: "File bukti tidak ditemukan di Cloudinary." });
+      }
+
+      const contentType = response.headers.get("content-type");
+      const buffer = Buffer.from(await response.arrayBuffer());
+      res.attachment(getSafeDownloadName(complaint.evidenceName));
+      if (contentType) {
+        res.type(contentType);
+      }
+      return res.send(buffer);
+    }
+
     const evidencePath = getLocalEvidencePath(complaint.evidenceUrl);
     if (!evidencePath || !fs.existsSync(evidencePath)) {
       return res.status(404).json({ error: "File bukti tidak ditemukan di server." });
@@ -139,6 +186,13 @@ const deleteComplaint = async (req, res) => {
     }
 
     await deleteComplaintById(objectId);
+    if (existing.evidencePublicId) {
+      try {
+        await deleteCloudinaryAsset(existing.evidencePublicId, existing.evidenceResourceType);
+      } catch (cloudinaryError) {
+        console.warn("Delete Cloudinary evidence warning", cloudinaryError.message);
+      }
+    }
     removeLocalEvidence(existing.evidenceUrl);
     return res.json({ success: true });
   } catch (err) {

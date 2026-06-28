@@ -6,6 +6,10 @@ const env = require("../config/env");
 const { createComplaint, findComplaintById } = require("../models/complaintModel");
 const { parseObjectId } = require("../utils/objectId");
 const { normalizeComplaint } = require("../utils/serializers");
+const {
+  cloudinaryFolders,
+  uploadBufferToCloudinary,
+} = require("../utils/cloudinary");
 
 const router = express.Router();
 
@@ -366,7 +370,13 @@ router.post(
       };
 
       if (req.file) {
-        payload.evidenceUrl = `/uploads/complaints/${req.file.filename}`;
+        const uploadedEvidence = await uploadBufferToCloudinary(
+          req.file,
+          cloudinaryFolders.complaintEvidence
+        );
+        payload.evidenceUrl = uploadedEvidence.secureUrl;
+        payload.evidencePublicId = uploadedEvidence.publicId;
+        payload.evidenceResourceType = uploadedEvidence.resourceType;
         payload.evidenceType = req.file.mimetype;
         payload.evidenceName = req.file.originalname;
       }
@@ -389,14 +399,19 @@ router.post(
   "/upload-evidence",
   auth(["student"]),
   uploadEvidence.single("evidence"),
-  (req, res) => {
+  async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "File tidak ditemukan." });
       }
 
+      const uploadedEvidence = await uploadBufferToCloudinary(
+        req.file,
+        cloudinaryFolders.complaintEvidence
+      );
+
       const fileData = {
-        evidenceUrl: `/uploads/complaints/${req.file.filename}`,
+        evidenceUrl: uploadedEvidence.secureUrl,
         evidenceType: req.file.mimetype,
         evidenceName: req.file.originalname,
       };

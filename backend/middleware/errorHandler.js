@@ -3,7 +3,7 @@ const { multer } = require("./upload");
 const errorHandler = (err, _req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === "LIMIT_FILE_SIZE") {
-      return res.status(400).json({ error: "Ukuran file maksimal 25MB." });
+      return res.status(400).json({ error: "Ukuran file maksimal 5MB." });
     }
 
     return res.status(400).json({ error: err.message });

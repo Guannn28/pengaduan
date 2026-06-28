@@ -1,7 +1,12 @@
 export const resolveMediaUrl = (value, apiUrl) => {
-  if (!value) return "";
-  if (/^https?:\/\//i.test(value)) return value;
-  return `${apiUrl}${value}`;
+  const normalizedValue = String(value || "").trim();
+  if (!normalizedValue) return "";
+  if (/^https?:\/\//i.test(normalizedValue)) return normalizedValue;
+  if (normalizedValue.startsWith("/uploads/")) {
+    const normalizedApiUrl = String(apiUrl || "").replace(/\/+$/, "");
+    return normalizedApiUrl ? `${normalizedApiUrl}${normalizedValue}` : normalizedValue;
+  }
+  return normalizedValue;
 };
 
 export const formatDate = (value) => {
