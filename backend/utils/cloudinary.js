@@ -89,6 +89,12 @@ const deleteCloudinaryAsset = async (publicId, resourceType = "image") => {
     return null;
   }
 
+  console.log("[EVIDENCE DELETE TRACE]", {
+    reason: "Cloudinary destroy called",
+    publicId,
+    stack: new Error().stack
+  });
+
   const client = configureCloudinary();
   return client.uploader.destroy(publicId, {
     resource_type: resourceType || "image",

@@ -1154,6 +1154,14 @@ button:focus-visible,
   flex-shrink: 0;
 }
 
+.evidence-file-preview-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface);
+  color: var(--teal-600);
+}
+
 .evidence-image-preview-info {
   display: flex;
   flex-direction: column;

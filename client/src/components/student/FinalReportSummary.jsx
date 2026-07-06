@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Paperclip, Image, X, CheckCircle, Loader2 } from "lucide-react";
 
 const renderFinalValue = (value) => {
@@ -23,30 +22,41 @@ const formatFileSize = (bytes) => {
 };
 const FinalReportSummary = ({
   chatFinalData,
-  chatEvidence,
-  setChatEvidence,
-  chatEvidenceInputKey,
   chatSubmitting,
   handleChatSubmitComplaint,
+  chatAttachment,
+  chatUploadedEvidence,
+  chatAttachUploading,
+  handleChatAttach,
+  handleChatRemoveAttachment,
 }) => {
-  const [previewUrl, setPreviewUrl] = useState(null);
   const handleFileChange = (event) => {
     const file = event.target.files?.[0] || null;
-    setChatEvidence(file);
-
-    if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onloadend = () => setPreviewUrl(reader.result);
-      reader.readAsDataURL(file);
-    } else {
-      setPreviewUrl(null);
+    if (file) {
+      handleChatAttach(file);
     }
+    event.target.value = "";
   };
 
   const handleRemoveFile = () => {
-    setChatEvidence(null);
-    setPreviewUrl(null);
+    handleChatRemoveAttachment();
   };
+
+  const evidenceName =
+    chatUploadedEvidence?.evidenceName || chatAttachment?.name || "Bukti pengaduan";
+  const evidenceSize = chatUploadedEvidence?.evidenceSize || chatAttachment?.size || 0;
+  const evidenceType =
+    chatUploadedEvidence?.evidenceMimeType ||
+    chatUploadedEvidence?.evidenceType ||
+    chatAttachment?.type ||
+    "";
+  const evidenceUrl = chatUploadedEvidence?.evidenceUrl || chatAttachment?.url || "";
+  const showImagePreview = evidenceUrl && evidenceType.startsWith("image/");
+  const evidenceStatusText = chatAttachUploading
+    ? "Mengunggah..."
+    : evidenceUrl
+      ? "Sudah terlampir"
+      : "Dipilih, akan diunggah saat dikirim";
 
   return (
     <div className="final-summary">
@@ -90,7 +100,7 @@ const FinalReportSummary = ({
           <strong>{renderFinalValue(chatFinalData.saksi)}</strong>
         </div>
         <div>
-          <span>Bukti Tambahan</span>
+          <span>Keterangan Bukti</span>
           <strong>{renderFinalValue(chatFinalData.bukti)}</strong>
         </div>
         <div className="final-summary-wide">
@@ -101,21 +111,32 @@ const FinalReportSummary = ({
       <div className="chat-evidence-upload">
         <label>
           <Paperclip size={14} strokeWidth={2} />
-          Lampiran Foto Bukti (Opsional)
+          Lampiran Bukti (Opsional)
         </label>
 
-        {chatEvidence && previewUrl ? (
+        {chatAttachment ? (
           <div className="evidence-image-preview-wrap">
-            <img
-              src={previewUrl}
-              alt="Preview foto bukti"
-              className="evidence-image-preview-thumb"
-            />
+            {showImagePreview ? (
+              <img
+                src={evidenceUrl}
+                alt="Preview foto bukti"
+                className="evidence-image-preview-thumb"
+              />
+            ) : (
+              <div className="evidence-image-preview-thumb evidence-file-preview-icon">
+                <Image size={24} strokeWidth={1.7} />
+              </div>
+            )}
             <div className="evidence-image-preview-info">
-              <strong>{chatEvidence.name}</strong>
-              <span>{formatFileSize(chatEvidence.size)}</span>
+              <strong>{evidenceName}</strong>
+              <span>{formatFileSize(evidenceSize)}</span>
+              {evidenceUrl && (
+                <a href={evidenceUrl} target="_blank" rel="noreferrer" className="ghost-link">
+                  Buka lampiran
+                </a>
+              )}
               <span className="evidence-ready-text">
-                Siap diunggah
+                {evidenceStatusText}
               </span>
             </div>
             <button
@@ -123,6 +144,7 @@ const FinalReportSummary = ({
               className="evidence-remove-btn"
               onClick={handleRemoveFile}
               title="Hapus foto ini"
+              disabled={chatAttachUploading}
             >
               <X size={16} strokeWidth={2.5} />
             </button>
@@ -130,7 +152,6 @@ const FinalReportSummary = ({
         ) : (
           <div className="file-drop-zone">
             <input
-              key={chatEvidenceInputKey}
               type="file"
               accept="image/jpeg,image/jpg,image/png"
               onChange={handleFileChange}
@@ -148,12 +169,12 @@ const FinalReportSummary = ({
           className="primary submit-report-btn"
           type="button"
           onClick={handleChatSubmitComplaint}
-          disabled={chatSubmitting}
+          disabled={chatSubmitting || chatAttachUploading}
         >
-          {chatSubmitting ? (
+          {chatSubmitting || chatAttachUploading ? (
             <>
               <Loader2 className="inline-spinner" size={16} strokeWidth={2.5} />
-              Mengirim Laporan...
+              {chatAttachUploading ? "Mengunggah Bukti..." : "Mengirim Laporan..."}
             </>
           ) : (
             "Kirim Laporan"

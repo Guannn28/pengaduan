@@ -26,9 +26,6 @@ const AssistantComplaintCard = ({
   setChatInput,
   chatLoading,
   chatFinalData,
-  chatEvidence,
-  setChatEvidence,
-  chatEvidenceInputKey,
   chatSubmitting,
   handleChatSend,
   handleChatSubmitComplaint,
@@ -106,8 +103,11 @@ const AssistantComplaintCard = ({
             {chatAttachUploading && (
               <Loader2 className="inline-spinner" size={14} strokeWidth={2.5} />
             )}
-            {!chatAttachUploading && chatUploadedEvidence && (
+            {!chatAttachUploading && chatUploadedEvidence?.evidenceUrl && (
               <span className="chat-attach-status">Terupload</span>
+            )}
+            {!chatAttachUploading && !chatUploadedEvidence?.evidenceUrl && (
+              <span className="chat-attach-status is-pending">Dipilih</span>
             )}
           </div>
           <button
@@ -156,7 +156,7 @@ const AssistantComplaintCard = ({
           <button
             type="button"
             onClick={handleChatSend}
-            disabled={chatLoading || !chatInput.trim()}
+            disabled={chatLoading || chatAttachUploading || !chatInput.trim()}
             title="Kirim pesan (Enter)"
           >
             <Send size={15} strokeWidth={2.5} />
@@ -167,11 +167,13 @@ const AssistantComplaintCard = ({
       {chatFinalData && (
         <FinalReportSummary
           chatFinalData={chatFinalData}
-          chatEvidence={chatEvidence}
-          setChatEvidence={setChatEvidence}
-          chatEvidenceInputKey={chatEvidenceInputKey}
           chatSubmitting={chatSubmitting}
           handleChatSubmitComplaint={handleChatSubmitComplaint}
+          chatAttachment={chatAttachment}
+          chatUploadedEvidence={chatUploadedEvidence}
+          chatAttachUploading={chatAttachUploading}
+          handleChatAttach={handleChatAttach}
+          handleChatRemoveAttachment={handleChatRemoveAttachment}
         />
       )}
     </div>

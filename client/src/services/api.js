@@ -201,18 +201,40 @@ export const api = {
     window.URL.revokeObjectURL(url);
   },
 
-  sendChatbotMessage: async (token, message, history, evidenceData) => {
-    const body = { message, history };
-    if (evidenceData) {
-      body.evidenceData = evidenceData;
+  getChatbotDraft: async (token) => {
+    return requestChatbotJson(
+      `${API_BASE_URL}/api/chatbot/draft`,
+      {
+        method: "GET",
+        headers: getHeaders(token),
+      },
+      CHATBOT_REQUEST_TIMEOUT_MS,
+      "Gagal memuat draft chatbot."
+    );
+  },
+
+  sendChatbotMessage: async (token, message, history, evidenceFile) => {
+    const hasEvidenceFile =
+      typeof File !== "undefined" && evidenceFile instanceof File;
+    let body;
+    let isFormData = false;
+
+    if (hasEvidenceFile) {
+      body = new FormData();
+      body.append("message", message);
+      body.append("history", JSON.stringify(history || []));
+      body.append("evidence", evidenceFile);
+      isFormData = true;
+    } else {
+      body = JSON.stringify({ message, history });
     }
 
     const data = await requestChatbotJson(
       `${API_BASE_URL}/api/chatbot/message`,
       {
         method: "POST",
-        headers: getHeaders(token),
-        body: JSON.stringify(body),
+        headers: getHeaders(token, isFormData),
+        body,
       },
       CHATBOT_REQUEST_TIMEOUT_MS,
       "Layanan asisten sedang sibuk, silakan coba beberapa saat lagi."
@@ -250,6 +272,18 @@ export const api = {
       },
       CHATBOT_UPLOAD_TIMEOUT_MS,
       "Gagal mengupload bukti. Silakan coba lagi."
+    );
+  },
+
+  deleteChatEvidence: async (token) => {
+    return requestChatbotJson(
+      `${API_BASE_URL}/api/chatbot/evidence`,
+      {
+        method: "DELETE",
+        headers: getHeaders(token),
+      },
+      CHATBOT_UPLOAD_TIMEOUT_MS,
+      "Gagal menghapus bukti. Silakan coba lagi."
     );
   },
 };

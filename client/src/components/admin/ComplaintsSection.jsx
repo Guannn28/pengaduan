@@ -17,6 +17,7 @@ const ComplaintRow = ({
   onOpenDetail,
 }) => {
   const mediaUrl = complaint.evidenceUrl ? resolveMediaUrl(complaint.evidenceUrl) : "";
+  const evidenceType = complaint.evidenceMimeType || complaint.evidenceType || "";
   const messagePreview = String(complaint.message || "").trim();
   const evidenceLabel = complaint.evidenceName
     ? `Ada bukti: ${complaint.evidenceName}`
@@ -51,13 +52,13 @@ const ComplaintRow = ({
         ) : (
           <div className="evidence-actions">
             <span className="mobile-evidence-summary">{evidenceLabel}</span>
-            {complaint.evidenceType?.startsWith("image/") ? (
+            {evidenceType.startsWith("image/") ? (
               <img
                 className="evidence-preview"
                 src={mediaUrl}
                 alt={complaint.evidenceName || "Bukti"}
               />
-            ) : complaint.evidenceType?.startsWith("video/") ? (
+            ) : evidenceType.startsWith("video/") ? (
               <video className="evidence-preview" src={mediaUrl} controls preload="metadata" />
             ) : (
               <a href={mediaUrl} target="_blank" rel="noreferrer" className="ghost-link">

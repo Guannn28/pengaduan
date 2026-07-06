@@ -1,13 +1,18 @@
 const express = require("express");
 const { auth } = require("../middleware/auth");
 const { uploadEvidence } = require("../middleware/upload");
-const { complaintCategories } = require("../constants");
 const env = require("../config/env");
 const { createComplaint, findComplaintById } = require("../models/complaintModel");
+const {
+  deleteActiveChatbotDraft,
+  findActiveChatbotDraft,
+  upsertChatbotDraftEvidence,
+} = require("../models/chatbotDraftModel");
 const { parseObjectId } = require("../utils/objectId");
 const { normalizeComplaint } = require("../utils/serializers");
 const {
   cloudinaryFolders,
+  deleteCloudinaryAsset,
   uploadBufferToCloudinary,
 } = require("../utils/cloudinary");
 
@@ -186,15 +191,268 @@ const parseFinalData = (rawFinalData) => {
   }
 };
 
-router.post("/message", auth(["student"]), async (req, res) => {
+const parseHistoryPayload = (rawHistory) => {
+  if (Array.isArray(rawHistory)) {
+    return rawHistory;
+  }
+
+  if (typeof rawHistory !== "string") {
+    return [];
+  }
+
   try {
-    const { message, history, evidenceData } = req.body || {};
+    const parsed = JSON.parse(rawHistory);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_error) {
+    return [];
+  }
+};
+
+const getRequestUserId = (req) => parseObjectId(req.user.id);
+
+const logEvidenceFileDiagnostic = (routeName, file) => {
+  if (process.env.NODE_ENV === "production") {
+    return;
+  }
+
+  console.log("[chatbot evidence]", {
+    route: routeName,
+    hasFile: Boolean(file),
+    fieldname: file?.fieldname,
+    originalname: file?.originalname,
+    mimetype: file?.mimetype,
+    size: file?.size,
+  });
+};
+
+const logCloudinaryEvidenceDiagnostic = (routeName, uploadedEvidence) => {
+  if (process.env.NODE_ENV === "production") {
+    return;
+  }
+
+  console.log("[chatbot evidence cloudinary]", {
+    route: routeName,
+    hasSecureUrl: Boolean(uploadedEvidence?.secureUrl),
+    publicId: uploadedEvidence?.publicId,
+    resourceType: uploadedEvidence?.resourceType,
+  });
+};
+
+const getDraftDocument = (draft) => {
+  if (!draft) {
+    return null;
+  }
+
+  return draft.value || draft;
+};
+
+const normalizeDraftEvidence = (draft) => {
+  const draftDocument = getDraftDocument(draft);
+  const evidenceSource = draftDocument?.evidence || draftDocument;
+
+  if (!evidenceSource?.evidenceUrl && !evidenceSource?.url) {
+    return null;
+  }
+
+  return {
+    evidenceUrl: evidenceSource.evidenceUrl || evidenceSource.url || "",
+    evidencePublicId: evidenceSource.evidencePublicId || evidenceSource.publicId || "",
+    evidenceResourceType:
+      evidenceSource.evidenceResourceType || evidenceSource.resourceType || "",
+    evidenceMimeType:
+      evidenceSource.evidenceMimeType ||
+      evidenceSource.evidenceType ||
+      evidenceSource.mimeType ||
+      "",
+    evidenceType:
+      evidenceSource.evidenceType ||
+      evidenceSource.evidenceMimeType ||
+      evidenceSource.mimeType ||
+      "",
+    evidenceName: evidenceSource.evidenceName || evidenceSource.name || "",
+    evidenceSize: evidenceSource.evidenceSize || evidenceSource.size || 0,
+  };
+};
+
+const buildUploadedEvidenceData = (file, uploadedEvidence) => ({
+  evidenceUrl: uploadedEvidence.secureUrl,
+  evidencePublicId: uploadedEvidence.publicId,
+  evidenceResourceType: uploadedEvidence.resourceType,
+  evidenceMimeType: file.mimetype,
+  evidenceType: file.mimetype,
+  evidenceName: file.originalname,
+  evidenceSize: file.size || 0,
+});
+
+const replaceDraftEvidence = async (userId, file) => {
+  const existingDraft = await findActiveChatbotDraft(userId);
+  let uploadedEvidence;
+
+  try {
+    uploadedEvidence = await uploadBufferToCloudinary(
+      file,
+      cloudinaryFolders.complaintEvidence
+    );
+    logCloudinaryEvidenceDiagnostic("draft-replace", uploadedEvidence);
+
+    const evidenceData = buildUploadedEvidenceData(file, uploadedEvidence);
+    const updatedDraft = await upsertChatbotDraftEvidence(userId, evidenceData);
+    const previousEvidence = normalizeDraftEvidence(existingDraft);
+
+    if (
+      previousEvidence?.evidencePublicId &&
+      previousEvidence.evidencePublicId !== evidenceData.evidencePublicId
+    ) {
+      try {
+        await deleteCloudinaryAsset(
+          previousEvidence.evidencePublicId,
+          previousEvidence.evidenceResourceType
+        );
+      } catch (cloudinaryError) {
+        console.warn("Delete replaced chatbot evidence warning", cloudinaryError.message);
+      }
+    }
+
+    return updatedDraft;
+  } catch (error) {
+    if (uploadedEvidence?.publicId) {
+      try {
+        await deleteCloudinaryAsset(uploadedEvidence.publicId, uploadedEvidence.resourceType);
+      } catch (cloudinaryError) {
+        console.warn("Cleanup failed chatbot evidence upload warning", cloudinaryError.message);
+      }
+    }
+
+    throw error;
+  }
+};
+
+const deleteDraftAndEvidence = async (userId) => {
+  const existingDraft = await findActiveChatbotDraft(userId);
+  await deleteActiveChatbotDraft(userId);
+
+  const evidence = normalizeDraftEvidence(existingDraft);
+  if (evidence?.evidencePublicId) {
+    try {
+      await deleteCloudinaryAsset(evidence.evidencePublicId, evidence.evidenceResourceType);
+    } catch (cloudinaryError) {
+      console.warn("Delete chatbot draft evidence warning", cloudinaryError.message);
+    }
+  }
+};
+
+const buildComplaintPayload = (user, userId, finalData, draft) => {
+  const rawCategory = String(finalData.kategori || "").trim().toLowerCase().replace(/\s+/g, "_");
+  const category = categoryMap[rawCategory] || categoryMap["lainnya"];
+
+  const modeIdentitas = String(finalData.modeIdentitas || "").trim().toLowerCase();
+  const urgency = String(finalData.urgensi || "").trim();
+  const isAnonymous = modeIdentitas.includes("anonim");
+
+  const kronologi = String(finalData.kronologi || "").trim();
+  const lokasi = String(finalData.lokasi || "").trim();
+  const waktu = String(finalData.waktu || "").trim();
+  const pihakTerlibat = String(finalData.pihakTerlibat || "").trim();
+  const saksi = String(finalData.saksi || "").trim();
+  const bukti = String(finalData.bukti || "").trim();
+  const harapan = String(finalData.harapan || "").trim();
+
+  const message = [
+    `Kronologi: ${kronologi}`,
+    `Lokasi: ${lokasi}`,
+    `Waktu: ${waktu}`,
+    `Pihak Terlibat: ${pihakTerlibat}`,
+    `Saksi: ${saksi || "Tidak ada"}`,
+    `Bukti Tambahan: ${bukti || "Tidak ada"}`,
+    `Harapan Pelapor: ${harapan}`,
+  ].join("\n");
+
+  const now = new Date();
+  const payload = {
+    userId,
+    name: user.name,
+    username: user.username,
+    isAnonymous,
+    category,
+    message,
+    urgency,
+    location: lokasi,
+    incidentTime: waktu,
+    involvedPeople: pihakTerlibat,
+    witnesses: saksi,
+    expectation: harapan,
+    chatbotData: finalData,
+    source: "chatbot",
+    status: "submitted",
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const evidence = normalizeDraftEvidence(draft);
+  if (evidence) {
+    payload.evidenceUrl = evidence.evidenceUrl;
+    payload.evidencePublicId = evidence.evidencePublicId;
+    payload.evidenceResourceType = evidence.evidenceResourceType;
+    payload.evidenceMimeType = evidence.evidenceMimeType;
+    payload.evidenceType = evidence.evidenceMimeType;
+    payload.evidenceName = evidence.evidenceName;
+    payload.evidenceSize = evidence.evidenceSize;
+  }
+
+  return payload;
+};
+
+const createComplaintFromChatbotData = async (req, finalData, draft) => {
+  const userId = getRequestUserId(req);
+  const result = await createComplaint(
+    buildComplaintPayload(req.user, userId, finalData, draft)
+  );
+  const created = await findComplaintById(result.insertedId);
+  await deleteActiveChatbotDraft(userId);
+
+  return normalizeComplaint(created, { viewerRole: req.user.role });
+};
+
+router.get("/draft", auth(["student"]), async (req, res) => {
+  try {
+    const draft = await findActiveChatbotDraft(getRequestUserId(req));
+    return res.status(200).json({
+      success: true,
+      draft: normalizeDraftEvidence(draft),
+    });
+  } catch (error) {
+    console.error("[Chatbot Error] Get draft error:", error);
+    return res.status(500).json({ error: "Gagal mengambil draft chatbot." });
+  }
+});
+
+router.post("/message", auth(["student"]), uploadEvidence.single("evidence"), async (req, res) => {
+  try {
+    logEvidenceFileDiagnostic("/message", req.file);
+    const { message, history } = req.body || {};
     const normalizedMessage =
       typeof message === "string" ? message.trim() : String(message || "").trim();
 
     if (!normalizedMessage) {
       return res.status(400).json({ error: "Message tidak boleh kosong." });
     }
+
+    const userId = getRequestUserId(req);
+
+    // --- TRACE: fetch draft BEFORE processing ---
+    const draftBeforeMessage = await findActiveChatbotDraft(userId);
+    console.log("[DRAFT EVIDENCE BEFORE MESSAGE]", {
+      userId: userId?.toString(),
+      conversationId: "default",
+      hasFile: Boolean(req.file),
+      draftFound: Boolean(draftBeforeMessage),
+      evidenceUrl: draftBeforeMessage?.evidenceUrl || null,
+      evidencePublicId: draftBeforeMessage?.evidencePublicId || null,
+    });
+
+    let activeDraft = req.file
+      ? await replaceDraftEvidence(userId, req.file)
+      : draftBeforeMessage;
 
     const n8nUrl = env.N8N_CHATBOT_WEBHOOK_URL;
     if (!n8nUrl) {
@@ -204,7 +462,7 @@ router.post("/message", auth(["student"]), async (req, res) => {
 
     const payload = {
       message: normalizedMessage,
-      history: history || [],
+      history: parseHistoryPayload(history),
     };
 
     const n8nResponse = await fetchN8nWebhook(n8nUrl, payload);
@@ -216,73 +474,44 @@ router.post("/message", auth(["student"]), async (req, res) => {
 
     const rawText = await n8nResponse.text();
     const responseData = parseN8nResponseText(rawText);
+    const finalData =
+      responseData.status === "completed" ? parseFinalData(responseData.data) : null;
+    if (finalData) {
+      responseData.data = finalData;
+    }
     const assistantReply = getAssistantReply(responseData);
+    let createdComplaint = null;
 
-    if (responseData.status === "completed" && responseData.data) {
+    if (responseData.status === "completed" && finalData) {
       try {
-        const finalData = responseData.data;
-        const rawCategory = String(finalData.kategori || "").trim().toLowerCase().replace(/\s+/g, "_");
-        const category = categoryMap[rawCategory] || categoryMap["lainnya"];
-
-        const modeIdentitas = String(finalData.modeIdentitas || "").trim().toLowerCase();
-        const urgency = String(finalData.urgensi || "").trim();
-        const isAnonymous = modeIdentitas.includes("anonim");
-
-        const kronologi = String(finalData.kronologi || "").trim();
-        const lokasi = String(finalData.lokasi || "").trim();
-        const waktu = String(finalData.waktu || "").trim();
-        const pihakTerlibat = String(finalData.pihakTerlibat || "").trim();
-        const saksi = String(finalData.saksi || "").trim();
-        const bukti = String(finalData.bukti || "").trim();
-        const harapan = String(finalData.harapan || "").trim();
-
-        const messageDesc = [
-          `Kronologi: ${kronologi}`,
-          `Lokasi: ${lokasi}`,
-          `Waktu: ${waktu}`,
-          `Pihak Terlibat: ${pihakTerlibat}`,
-          `Saksi: ${saksi || "Tidak ada"}`,
-          `Bukti Tambahan: ${bukti || "Tidak ada"}`,
-          `Harapan Pelapor: ${harapan}`,
-        ].join("\n");
-
-        const now = new Date();
-        const payloadComplaint = {
-          userId: parseObjectId(req.user.id),
-          name: req.user.name,
-          username: req.user.username,
-          isAnonymous,
-          category,
-          message: messageDesc,
-          urgency,
-          location: lokasi,
-          incidentTime: waktu,
-          involvedPeople: pihakTerlibat,
-          witnesses: saksi,
-          expectation: harapan,
-          chatbotData: finalData,
-          source: "chatbot",
-          status: "submitted",
-          createdAt: now,
-          updatedAt: now,
-        };
-
-        if (evidenceData && evidenceData.evidenceUrl) {
-          payloadComplaint.evidenceUrl = evidenceData.evidenceUrl;
-          payloadComplaint.evidenceType = evidenceData.evidenceType || "image/jpeg";
-          payloadComplaint.evidenceName = evidenceData.evidenceName || "bukti.jpg";
-        }
-
-        const result = await createComplaint(payloadComplaint);
-        const created = await findComplaintById(result.insertedId);
-        
-        responseData.complaint = normalizeComplaint(created, { viewerRole: req.user.role });
+        activeDraft = activeDraft || await findActiveChatbotDraft(userId);
+        createdComplaint = await createComplaintFromChatbotData(req, finalData, activeDraft);
+        activeDraft = null;
       } catch (err) {
         console.error("[Chatbot Error] Gagal menyimpan otomatis pengaduan:", err);
       }
     }
 
-    return res.status(200).json({ success: true, message: assistantReply });
+    // --- TRACE: log draft state AFTER processing ---
+    const normalizedDraftEvidence = normalizeDraftEvidence(activeDraft);
+    console.log("[DRAFT EVIDENCE AFTER MESSAGE]", {
+      userId: userId?.toString(),
+      conversationId: "default",
+      hasFile: Boolean(req.file),
+      activeDraftFound: Boolean(activeDraft),
+      activeDraftEvidenceUrl: activeDraft?.evidenceUrl || activeDraft?.value?.evidenceUrl || null,
+      normalizedDraftEvidenceUrl: normalizedDraftEvidence?.evidenceUrl || null,
+      normalizedDraftPublicId: normalizedDraftEvidence?.evidencePublicId || null,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: assistantReply,
+      status: responseData.status || "",
+      data: responseData.data || null,
+      complaint: createdComplaint,
+      draft: normalizedDraftEvidence,
+    });
   } catch (error) {
     console.error("[Chatbot Error] Message processing error:", error.code || error.message || error);
 
@@ -312,77 +541,28 @@ router.post(
   uploadEvidence.single("evidence"),
   async (req, res) => {
     try {
+      logEvidenceFileDiagnostic("/submit", req.file);
       const finalData = parseFinalData(req.body?.finalData);
       if (!finalData) {
         return res.status(400).json({ error: "finalData tidak valid." });
       }
 
-      const rawCategory = String(finalData.kategori || "").trim().toLowerCase().replace(/\s+/g, "_");
-      const category = categoryMap[rawCategory] || categoryMap["lainnya"];
-
-      const modeIdentitas = String(finalData.modeIdentitas || "").trim().toLowerCase();
-      const urgency = String(finalData.urgensi || "").trim();
-      const isAnonymous = modeIdentitas.includes("anonim");
-
       const kronologi = String(finalData.kronologi || "").trim();
-      const lokasi = String(finalData.lokasi || "").trim();
-      const waktu = String(finalData.waktu || "").trim();
-      const pihakTerlibat = String(finalData.pihakTerlibat || "").trim();
-      const saksi = String(finalData.saksi || "").trim();
-      const bukti = String(finalData.bukti || "").trim();
-      const harapan = String(finalData.harapan || "").trim();
-
       if (!kronologi) {
         return res.status(400).json({
           error: "Kronologi kejadian wajib diisi.",
         });
       }
 
-      const message = [
-        `Kronologi: ${kronologi}`,
-        `Lokasi: ${lokasi}`,
-        `Waktu: ${waktu}`,
-        `Pihak Terlibat: ${pihakTerlibat}`,
-        `Saksi: ${saksi || "Tidak ada"}`,
-        `Bukti Tambahan: ${bukti || "Tidak ada"}`,
-        `Harapan Pelapor: ${harapan}`,
-      ].join("\n");
-
-      const now = new Date();
-      const payload = {
-        userId: parseObjectId(req.user.id),
-        name: req.user.name,
-        username: req.user.username,
-        isAnonymous,
-        category,
-        message,
-        urgency,
-        location: lokasi,
-        incidentTime: waktu,
-        involvedPeople: pihakTerlibat,
-        witnesses: saksi,
-        expectation: harapan,
-        chatbotData: finalData,
-        source: "chatbot",
-        status: "submitted",
-        createdAt: now,
-        updatedAt: now,
-      };
-
-      if (req.file) {
-        const uploadedEvidence = await uploadBufferToCloudinary(
-          req.file,
-          cloudinaryFolders.complaintEvidence
-        );
-        payload.evidenceUrl = uploadedEvidence.secureUrl;
-        payload.evidencePublicId = uploadedEvidence.publicId;
-        payload.evidenceResourceType = uploadedEvidence.resourceType;
-        payload.evidenceType = req.file.mimetype;
-        payload.evidenceName = req.file.originalname;
-      }
+      const userId = getRequestUserId(req);
+      const activeDraft = req.file
+        ? await replaceDraftEvidence(userId, req.file)
+        : await findActiveChatbotDraft(userId);
+      const payload = buildComplaintPayload(req.user, userId, finalData, activeDraft);
 
       const result = await createComplaint(payload);
       const created = await findComplaintById(result.insertedId);
+      await deleteActiveChatbotDraft(userId);
 
       return res.status(201).json({
         success: true,
@@ -401,27 +581,30 @@ router.post(
   uploadEvidence.single("evidence"),
   async (req, res) => {
     try {
+      logEvidenceFileDiagnostic("/upload-evidence", req.file);
       if (!req.file) {
         return res.status(400).json({ error: "File tidak ditemukan." });
       }
 
-      const uploadedEvidence = await uploadBufferToCloudinary(
-        req.file,
-        cloudinaryFolders.complaintEvidence
-      );
+      const draft = await replaceDraftEvidence(getRequestUserId(req), req.file);
+      const fileData = normalizeDraftEvidence(draft);
 
-      const fileData = {
-        evidenceUrl: uploadedEvidence.secureUrl,
-        evidenceType: req.file.mimetype,
-        evidenceName: req.file.originalname,
-      };
-
-      return res.status(200).json({ success: true, file: fileData });
+      return res.status(200).json({ success: true, file: fileData, draft: fileData });
     } catch (error) {
       console.error("[Chatbot Error] Upload evidence error:", error);
       return res.status(500).json({ error: "Gagal mengupload bukti." });
     }
   }
 );
+
+router.delete("/evidence", auth(["student"]), async (req, res) => {
+  try {
+    await deleteDraftAndEvidence(getRequestUserId(req));
+    return res.status(200).json({ success: true, draft: null });
+  } catch (error) {
+    console.error("[Chatbot Error] Delete evidence error:", error);
+    return res.status(500).json({ error: "Gagal menghapus bukti." });
+  }
+});
 
 module.exports = router;

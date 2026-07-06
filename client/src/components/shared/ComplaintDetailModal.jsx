@@ -26,19 +26,20 @@ const ComplaintEvidence = ({
   }
 
   const mediaUrl = resolveMediaUrl ? resolveMediaUrl(evidenceUrl) : evidenceUrl;
+  const evidenceType = complaint.evidenceMimeType || complaint.evidenceType || "";
   const previewClass = isAdmin
     ? "evidence-preview complaint-preview-thumb"
     : "student-evidence-preview student-evidence-preview-large";
 
   return (
     <div className="evidence-actions">
-      {complaint.evidenceType?.startsWith("image/") ? (
+      {evidenceType.startsWith("image/") ? (
         <img
           className={previewClass}
           src={mediaUrl}
           alt={complaint.evidenceName || "Bukti pengaduan"}
         />
-      ) : complaint.evidenceType?.startsWith("video/") ? (
+      ) : evidenceType.startsWith("video/") ? (
         <video
           className={previewClass}
           src={mediaUrl}

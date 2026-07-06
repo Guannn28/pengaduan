@@ -31,9 +31,6 @@ const StudentPage = ({
   setChatInput,
   chatLoading,
   chatFinalData,
-  chatEvidence,
-  setChatEvidence,
-  chatEvidenceInputKey,
   chatSubmitting,
   handleChatSend,
   handleChatSubmitComplaint,
@@ -258,9 +255,6 @@ const StudentPage = ({
                     setChatInput={setChatInput}
                     chatLoading={chatLoading}
                     chatFinalData={chatFinalData}
-                    chatEvidence={chatEvidence}
-                    setChatEvidence={setChatEvidence}
-                    chatEvidenceInputKey={chatEvidenceInputKey}
                     chatSubmitting={chatSubmitting}
                     handleChatSend={handleChatSend}
                     handleChatSubmitComplaint={handleChatSubmitComplaint}

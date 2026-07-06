@@ -11,7 +11,8 @@ const EvidencePreview = ({ complaint, resolveMediaUrl }) => {
   }
 
   const mediaUrl = resolveMediaUrl(complaint.evidenceUrl);
-  if (complaint.evidenceType?.startsWith("image/")) {
+  const evidenceType = complaint.evidenceMimeType || complaint.evidenceType || "";
+  if (evidenceType.startsWith("image/")) {
     return (
       <span className="student-evidence-inline">
         <img
@@ -24,7 +25,7 @@ const EvidencePreview = ({ complaint, resolveMediaUrl }) => {
     );
   }
 
-  if (complaint.evidenceType?.startsWith("video/")) {
+  if (evidenceType.startsWith("video/")) {
     return (
       <span className="student-evidence-inline">
         <video className="student-evidence-preview" src={mediaUrl} controls preload="metadata" />

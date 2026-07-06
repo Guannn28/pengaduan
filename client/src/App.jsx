@@ -29,6 +29,19 @@ const createInitialChatMessages = () => [
   },
 ];
 
+const createAttachmentFromEvidence = (evidence) => {
+  if (!evidence?.evidenceUrl) {
+    return null;
+  }
+
+  return {
+    name: evidence.evidenceName || "Bukti pengaduan",
+    size: evidence.evidenceSize || 0,
+    type: evidence.evidenceMimeType || evidence.evidenceType || "",
+    url: evidence.evidenceUrl,
+  };
+};
+
 const resolveMediaUrl = (value) => {
   return resolveMediaUrlValue(value, API_BASE_URL);
 };
@@ -43,11 +56,11 @@ function App() {
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [chatFinalData, setChatFinalData] = useState(null);
-  const [chatEvidence, setChatEvidence] = useState(null);
   const [chatSubmitting, setChatSubmitting] = useState(false);
-  const [chatEvidenceInputKey, setChatEvidenceInputKey] = useState(0);
+  const [selectedChatEvidenceFile, setSelectedChatEvidenceFile] = useState(null);
   const [chatAttachment, setChatAttachment] = useState(null);
   const [chatUploadedEvidence, setChatUploadedEvidence] = useState(null);
+  const [chatEvidenceMentioned, setChatEvidenceMentioned] = useState(false);
   const [chatAttachUploading, setChatAttachUploading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [creatingUser, setCreatingUser] = useState(false);
@@ -77,6 +90,38 @@ function App() {
   const [token, setToken] = useState(
     localStorage.getItem("complain_token") || ""
   );
+
+  const applyChatDraftEvidence = useCallback((evidence) => {
+    const normalizedEvidence = evidence?.evidenceUrl ? evidence : null;
+    setChatUploadedEvidence(normalizedEvidence);
+    setChatAttachment(createAttachmentFromEvidence(normalizedEvidence));
+    setChatEvidenceMentioned(false);
+  }, []);
+
+  const clearChatbotConversation = useCallback(() => {
+    setChatMessages(createInitialChatMessages());
+    setChatFinalData(null);
+    setChatInput("");
+    setSelectedChatEvidenceFile(null);
+    setChatAttachment(null);
+    setChatUploadedEvidence(null);
+    setChatEvidenceMentioned(false);
+    setChatAttachUploading(false);
+  }, []);
+
+  const hydrateChatbotDraft = useCallback(async (tkn) => {
+    if (!tkn) {
+      applyChatDraftEvidence(null);
+      return;
+    }
+
+    try {
+      const result = await api.getChatbotDraft(tkn);
+      applyChatDraftEvidence(result.draft || null);
+    } catch (err) {
+      console.warn("Load chatbot draft warning", err.message || err);
+    }
+  }, [applyChatDraftEvidence]);
 
   const fetchComplaints = useCallback(async (tkn = token) => {
     if (!tkn) {
@@ -142,6 +187,7 @@ function App() {
         setAccountRequests([]);
         setStudentAccounts([]);
         setStudentAccountsLoading(false);
+        await hydrateChatbotDraft(tkn);
       }
     } catch {
       setUser(null);
@@ -149,7 +195,7 @@ function App() {
       localStorage.removeItem("complain_token");
       setLoading(false);
     }
-  }, [fetchAccountRequests, fetchComplaints, fetchStudentAccounts]);
+  }, [fetchAccountRequests, fetchComplaints, fetchStudentAccounts, hydrateChatbotDraft]);
 
   useEffect(() => {
     if (token) {
@@ -161,40 +207,65 @@ function App() {
 
   const handleChatAttach = async (file) => {
     if (!file) {
+      setSelectedChatEvidenceFile(null);
       setChatAttachment(null);
       setChatUploadedEvidence(null);
+      setChatEvidenceMentioned(false);
       return;
     }
 
-    setChatAttachment(file);
-    setChatAttachUploading(true);
-    try {
-      const result = await api.uploadChatEvidence(token, file);
-      setChatUploadedEvidence(result.file);
-      showToast("Foto bukti berhasil dilampirkan.", "success");
-    } catch (err) {
-      showToast(err.message || "Gagal mengupload foto bukti.", "error");
-      setChatAttachment(null);
-      setChatUploadedEvidence(null);
-    } finally {
-      setChatAttachUploading(false);
-    }
+    setSelectedChatEvidenceFile(file);
+    setChatAttachment({
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      url: "",
+    });
+    setChatUploadedEvidence(null);
+    setChatEvidenceMentioned(false);
+    showToast("Bukti dipilih. File akan diunggah saat pesan dikirim.", "info");
   };
 
-  const handleChatRemoveAttachment = () => {
+  const handleChatRemoveAttachment = async () => {
+    if (chatAttachUploading) {
+      return;
+    }
+
+    const previousAttachment = chatAttachment;
+    const previousEvidence = chatUploadedEvidence;
+    setSelectedChatEvidenceFile(null);
     setChatAttachment(null);
     setChatUploadedEvidence(null);
+    setChatEvidenceMentioned(false);
+
+    if (!previousEvidence?.evidenceUrl || !token) {
+      return;
+    }
+
+    try {
+      await api.deleteChatEvidence(token);
+      showToast("Bukti berhasil dihapus dari draft.", "success");
+    } catch (err) {
+      setChatAttachment(previousAttachment);
+      setChatUploadedEvidence(previousEvidence);
+      showToast(err.message || "Gagal menghapus bukti.", "error");
+    }
   };
 
   const handleChatSend = async () => {
     const message = chatInput.trim();
-    if (!message || !token || chatLoading) {
+    if (!message || !token || chatLoading || chatAttachUploading) {
       return;
     }
 
     const userMessage = { role: "user", content: message };
-    if (chatAttachment) {
-      userMessage.content += `\nLampiran: ${chatAttachment.name}`;
+    const selectedEvidenceName = selectedChatEvidenceFile?.name || chatAttachment?.name || "";
+    if (selectedEvidenceName && !chatUploadedEvidence?.evidenceUrl) {
+      userMessage.content += `\nLampiran bukti: ${selectedEvidenceName}`;
+    } else if (chatUploadedEvidence?.evidenceUrl && !chatEvidenceMentioned) {
+      const evidenceName =
+        chatUploadedEvidence.evidenceName || chatAttachment?.name || "Bukti pengaduan";
+      userMessage.content += `\nLampiran bukti: ${evidenceName}`;
     }
     const newMessages = [...chatMessages, userMessage];
 
@@ -203,9 +274,17 @@ function App() {
     setChatFinalData(null);
     setChatLoading(true);
     setError("");
+    if (selectedEvidenceName || (chatUploadedEvidence?.evidenceUrl && !chatEvidenceMentioned)) {
+      setChatEvidenceMentioned(true);
+    }
 
     try {
-      const result = await api.sendChatbotMessage(token, message, newMessages, chatUploadedEvidence || undefined);
+      const result = await api.sendChatbotMessage(
+        token,
+        message,
+        newMessages,
+        selectedChatEvidenceFile
+      );
 
       const assistantReply = result?.message || "";
       if (assistantReply) {
@@ -215,10 +294,35 @@ function App() {
         ]);
       }
 
+      if (Object.prototype.hasOwnProperty.call(result || {}, "draft")) {
+        const draftEvidence = result.draft || null;
+        if (draftEvidence) {
+          // Backend confirmed evidence exists in draft – update UI to reflect it
+          setChatUploadedEvidence(draftEvidence);
+          setChatAttachment(createAttachmentFromEvidence(draftEvidence));
+          setSelectedChatEvidenceFile(null);
+        } else if (!selectedChatEvidenceFile) {
+          // Backend says no draft evidence AND user has no local file pending –
+          // only then clear (e.g., after complaint completion clears the draft)
+          // But do NOT clear if we already have an uploaded evidence that the
+          // backend just failed to echo back (defensive: preserve user's upload)
+          if (!chatUploadedEvidence?.evidenceUrl) {
+            setChatUploadedEvidence(null);
+            setChatAttachment(null);
+          }
+        }
+      }
+
       const status = result?.status || result?.data?.status;
       if (status === "completed") {
-        showToast("Laporan dikumpulkan secara otomatis (atau siap dikirim).", "info");
-        setChatFinalData(result?.data?.data || result?.data || null);
+        if (result?.complaint) {
+          setComplaints((prev) => [result.complaint, ...prev]);
+          clearChatbotConversation();
+          showToast("Laporan berhasil dikirim ke sistem!", "success");
+        } else {
+          showToast("Laporan siap dikirim. Periksa ringkasan sebelum dikirim.", "info");
+          setChatFinalData(result?.data?.data || result?.data || null);
+        }
       }
     } catch (err) {
       const assistantErrorMessage =
@@ -237,7 +341,7 @@ function App() {
   };
 
   const handleChatSubmitComplaint = async () => {
-    if (!token || !chatFinalData || chatSubmitting) {
+    if (!token || !chatFinalData || chatSubmitting || chatAttachUploading) {
       return;
     }
 
@@ -248,8 +352,8 @@ function App() {
     try {
       const payload = new FormData();
       payload.append("finalData", JSON.stringify(chatFinalData));
-      if (chatEvidence) {
-        payload.append("evidence", chatEvidence);
+      if (selectedChatEvidenceFile instanceof File) {
+        payload.append("evidence", selectedChatEvidenceFile);
       }
 
       const result = await api.submitChatbotComplaint(token, payload);
@@ -258,11 +362,7 @@ function App() {
         setComplaints((prev) => [createdComplaint, ...prev]);
       }
 
-      setChatMessages(createInitialChatMessages());
-      setChatFinalData(null);
-      setChatEvidence(null);
-      setChatEvidenceInputKey((prev) => prev + 1);
-      setChatInput("");
+      clearChatbotConversation();
       showToast("Laporan berhasil dikirim ke sistem!", "success");
     } catch (err) {
       showToast(err.message || "Gagal menyimpan laporan.", "error");
@@ -358,6 +458,8 @@ function App() {
       if (data.user?.role === "admin") {
         fetchAccountRequests(data.token);
         fetchStudentAccounts(data.token);
+      } else {
+        hydrateChatbotDraft(data.token);
       }
     } catch (err) {
       setError(err.message || "Login/daftar gagal.");
@@ -450,11 +552,11 @@ function App() {
     setChatInput("");
     setChatLoading(false);
     setChatFinalData(null);
-    setChatEvidence(null);
     setChatSubmitting(false);
-    setChatEvidenceInputKey((prev) => prev + 1);
+    setSelectedChatEvidenceFile(null);
     setChatAttachment(null);
     setChatUploadedEvidence(null);
+    setChatEvidenceMentioned(false);
     setChatAttachUploading(false);
   };
 
@@ -542,9 +644,6 @@ function App() {
         setChatInput={setChatInput}
         chatLoading={chatLoading}
         chatFinalData={chatFinalData}
-        chatEvidence={chatEvidence}
-        setChatEvidence={setChatEvidence}
-        chatEvidenceInputKey={chatEvidenceInputKey}
         chatSubmitting={chatSubmitting}
         handleChatSend={handleChatSend}
         handleChatSubmitComplaint={handleChatSubmitComplaint}

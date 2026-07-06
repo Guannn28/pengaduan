@@ -44,6 +44,7 @@ async function initDb() {
     usersCollection: db.collection("users"),
     tokensCollection: db.collection("tokens"),
     complaintsCollection: db.collection("complaints"),
+    chatbotDraftsCollection: db.collection("chatbotDrafts"),
     accountRequestsCollection: db.collection("accountRequests"),
   };
 
@@ -66,6 +67,14 @@ async function initDb() {
     collections.complaintsCollection.createIndex({ userId: 1, createdAt: -1 }),
     collections.complaintsCollection.createIndex({ createdAt: -1 }),
     collections.complaintsCollection.createIndex({ status: 1 }),
+    collections.chatbotDraftsCollection.createIndex(
+      { userId: 1, conversationId: 1, status: 1 },
+      {
+        unique: true,
+        partialFilterExpression: { status: "active" },
+      }
+    ),
+    collections.chatbotDraftsCollection.createIndex({ updatedAt: -1 }),
     collections.accountRequestsCollection.createIndex(
       { username: 1, status: 1 },
       { unique: false }
