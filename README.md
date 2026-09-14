@@ -293,7 +293,7 @@ The build command generates the production frontend in `client/dist`. The backen
 
 ## 🎯 Project Purpose
 
-Kaduin Lu was built to demonstrate:
+Complaint was built to demonstrate:
 
 - Full-stack web application development
 - REST API and role-based authentication
@@ -312,6 +312,6 @@ This project is licensed under the **ISC License**.
 
 ## 👨‍💻 Author
 
-**Kaduin Lu Development Team**
+**Sandi Bagus Pramudika** Full Stack Developer
 
 **Tech:** React · Vite · Node.js · Express.js · MongoDB · Cloudinary · n8n
