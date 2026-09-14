@@ -1,209 +1,79 @@
-import { useState } from "react";
-import {
-  formatDate,
-  getStatusLabel,
-  getUrgencyBadgeClass,
-  getUrgencyValue,
-} from "../../utils/formatters";
+import { useMemo, useState } from "react";
+import { Download, FileSearch, MoreHorizontal, Paperclip, RefreshCw } from "lucide-react";
+import { formatDate, getStatusLabel, getUrgencyBadgeClass, getUrgencyValue } from "../../utils/formatters";
+import { Button, ConfirmationDialog, EmptyState, LoadingSkeleton, SearchField } from "../shared/ui";
 
-const ComplaintRow = ({
-  complaint,
-  resolveMediaUrl,
-  statusOptions,
-  statusColor,
-  handleStatus,
-  handleDelete,
-  handleDownloadEvidence,
-  onOpenDetail,
-}) => {
-  const mediaUrl = complaint.evidenceUrl ? resolveMediaUrl(complaint.evidenceUrl) : "";
-  const evidenceType = complaint.evidenceMimeType || complaint.evidenceType || "";
-  const messagePreview = String(complaint.message || "").trim();
-  const evidenceLabel = complaint.evidenceName
-    ? `Ada bukti: ${complaint.evidenceName}`
-    : "Ada bukti";
+const PAGE_SIZE = 10;
+
+const ComplaintRow = ({ complaint, statusOptions, statusColor, handleStatus, onDelete, onOpenDetail }) => {
   const urgency = getUrgencyValue(complaint);
+  const openFromRow = (event) => {
+    if (event.target.closest("button, select, summary, details, a")) return;
+    onOpenDetail(complaint);
+  };
 
   return (
-    <div className="table-slim complaints-row admin-complaint-card">
-      <span data-label="Pelapor">
-        <strong>{complaint.name}</strong>
-        <p className="muted small">
-          {complaint.isAnonymous ? "Identitas disembunyikan" : complaint.username || "-"}
-        </p>
-      </span>
-      <span data-label="Kategori">
-        <strong>{complaint.category || "-"}</strong>
-        {urgency && <span className={getUrgencyBadgeClass(urgency)}>{urgency}</span>}
-      </span>
-      <span data-label="Pesan">
-        <div className="complaint-message-preview">{messagePreview || "Tidak ada pesan."}</div>
-        <button
-          className="ghost complaint-detail-button"
-          type="button"
-          onClick={() => onOpenDetail(complaint)}
-        >
-          Lihat detail
-        </button>
-      </span>
-      <span data-label="Bukti">
-        {!complaint.evidenceUrl ? (
-          <span className="muted small">Tidak ada</span>
-        ) : (
-          <div className="evidence-actions">
-            <span className="mobile-evidence-summary">{evidenceLabel}</span>
-            {evidenceType.startsWith("image/") ? (
-              <img
-                className="evidence-preview"
-                src={mediaUrl}
-                alt={complaint.evidenceName || "Bukti"}
-              />
-            ) : evidenceType.startsWith("video/") ? (
-              <video className="evidence-preview" src={mediaUrl} controls preload="metadata" />
-            ) : (
-              <a href={mediaUrl} target="_blank" rel="noreferrer" className="ghost-link">
-                Lihat bukti
-              </a>
-            )}
-            <button
-              className="ghost small-btn"
-              type="button"
-              onClick={() => handleDownloadEvidence(complaint)}
-            >
-              Download
-            </button>
-          </div>
-        )}
-      </span>
-      <span data-label="Status">
-        <span className={statusColor[complaint.status] || "badge"}>
-          {getStatusLabel(statusOptions, complaint.status)}
-        </span>
-      </span>
-      <span className="muted small" data-label="Tanggal">
-        {formatDate(complaint.createdAt)}
-      </span>
-      <span className="admin-actions" data-label="Aksi">
-        <select
-          value={complaint.status}
-          onChange={(event) => handleStatus(complaint.id, event.target.value)}
-        >
-          {statusOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <button
-          className="ghost danger-text"
-          type="button"
-          onClick={() => handleDelete(complaint.id)}
-        >
-          Hapus
-        </button>
-      </span>
+    <div className="data-row complaints-row admin-complaint-card" role="button" tabIndex="0" onClick={openFromRow} onKeyDown={(event) => { if (event.key === "Enter" && event.target === event.currentTarget) onOpenDetail(complaint); }}>
+      <span data-label="Pelapor"><strong>{complaint.isAnonymous ? "Pelapor anonim" : complaint.name || "Pelapor"}</strong><small>{complaint.isAnonymous ? "Identitas dilindungi" : [complaint.className, complaint.username && `@${complaint.username}`].filter(Boolean).join(" · ") || "Data pelapor"}</small></span>
+      <span data-label="Pengaduan" className="complaint-cell"><span className="complaint-category-line"><strong>{complaint.category || "Pengaduan"}</strong>{urgency && <span className={getUrgencyBadgeClass(urgency)}>{urgency}</span>}</span><span className="complaint-message-preview">{complaint.message || "Tidak ada cuplikan pengaduan."}</span></span>
+      <span data-label="Lampiran">{complaint.evidenceUrl ? <span className="attachment-chip"><Paperclip size={14} /> 1 lampiran</span> : <span className="muted">Tidak ada</span>}</span>
+      <span data-label="Status dan waktu" className="status-time-cell"><span className={statusColor[complaint.status] || "badge"}>{getStatusLabel(statusOptions, complaint.status)}</span><small>{formatDate(complaint.updatedAt || complaint.createdAt)}</small></span>
+      <span className="row-actions" data-label="Aksi"><Button variant="secondary" type="button" onClick={() => onOpenDetail(complaint)}>Tinjau</Button><details className="action-menu"><summary aria-label="Aksi lainnya"><MoreHorizontal size={20} /></summary><div className="action-menu-popover"><label>Ubah status<select value={complaint.status} onChange={(event) => handleStatus(complaint.id, event.target.value)}>{statusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><button type="button" onClick={() => onDelete(complaint)}>Hapus pengaduan</button></div></details></span>
     </div>
   );
 };
 
-const ComplaintsSection = ({
-  loading,
-  filtered,
-  filter,
-  setFilter,
-  resolveMediaUrl,
-  statusOptions,
-  statusColor,
-  fetchComplaints,
-  handleStatus,
-  handleDelete,
-  handleDownloadEvidence,
-  handleExportComplaints,
-  setSelectedComplaint,
-  error,
-  successMessage,
-}) => {
+const ComplaintsSection = ({ loading, filtered, filter, setFilter, statusOptions, statusColor, fetchComplaints, handleStatus, handleDelete, handleExportComplaints, setSelectedComplaint }) => {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("all");
+  const [priority, setPriority] = useState("all");
+  const [date, setDate] = useState("");
+  const [page, setPage] = useState(1);
   const [exportLoading, setExportLoading] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const categories = useMemo(() => [...new Set(filtered.map((item) => item.category).filter(Boolean))].sort(), [filtered]);
+  const results = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return filtered.filter((complaint) => {
+      const urgency = getUrgencyValue(complaint).toLowerCase();
+      const parsedDate = complaint.createdAt ? new Date(complaint.createdAt) : null;
+      const createdDate = parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate.toISOString().slice(0, 10) : "";
+      return (category === "all" || complaint.category === category)
+        && (priority === "all" || urgency.includes(priority))
+        && (!date || createdDate === date)
+        && (!query || [complaint.name, complaint.username, complaint.className, complaint.category, complaint.message].some((value) => String(value || "").toLowerCase().includes(query)));
+    });
+  }, [filtered, search, category, priority, date]);
+  const totalPages = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
+  const paged = results.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const updateFilter = (setter) => (event) => { setter(event.target.value); setPage(1); };
 
-  const onExportComplaints = async () => {
+  const onExport = async () => {
     if (!handleExportComplaints || exportLoading) return;
     setExportLoading(true);
-    try {
-      await handleExportComplaints();
-    } finally {
-      setExportLoading(false);
-    }
+    try { await handleExportComplaints(); } finally { setExportLoading(false); }
   };
 
   return (
-    <section className="card schedule-card">
-      <div className="card-head">
-        <div>
-          <h3>Daftar Pengaduan Admin</h3>
-          <p className="muted small">
-            Tinjau laporan, ubah status penanganan, atau unduh bukti jika diperlukan.
-          </p>
-        </div>
-        <div className="filters complaints-toolbar">
-          {handleExportComplaints && (
-            <button
-              className="export-button"
-              id="export-complaints-excel-btn"
-              type="button"
-              disabled={exportLoading}
-              onClick={onExportComplaints}
-            >
-              {exportLoading ? "Mengekspor..." : "Ekspor Excel"}
-            </button>
-          )}
-          <label>Status</label>
-          <select value={filter} onChange={(event) => setFilter(event.target.value)}>
-            <option value="all">Semua</option>
-            {statusOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <button className="ghost" type="button" onClick={() => fetchComplaints()}>
-            Muat ulang
-          </button>
-        </div>
+    <section className="card data-section complaints-section">
+      <header className="card-head"><div><p className="section-eyebrow">Kotak masuk</p><h2>Daftar pengaduan</h2><p>Tinjau laporan, perbarui status, dan akses lampiran secara aman.</p></div><div className="card-actions"><Button variant="secondary" type="button" loading={exportLoading} onClick={onExport}><Download size={16} /> Ekspor</Button><Button variant="secondary" type="button" onClick={() => fetchComplaints()}><RefreshCw size={16} /> Perbarui data</Button></div></header>
+      <div className="filter-bar complaints-filter-bar">
+        <SearchField value={search} onChange={updateFilter(setSearch)} placeholder="Cari pelapor, kategori, atau isi pengaduan" />
+        <label><span>Status</span><select value={filter} onChange={(event) => { setFilter(event.target.value); setPage(1); }}><option value="all">Semua status</option>{statusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+        <label><span>Kategori</span><select value={category} onChange={updateFilter(setCategory)}><option value="all">Semua kategori</option>{categories.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <label><span>Prioritas</span><select value={priority} onChange={updateFilter(setPriority)}><option value="all">Semua prioritas</option><option value="tinggi">Tinggi</option><option value="sedang">Sedang</option><option value="rendah">Rendah</option></select></label>
+        <label><span>Tanggal</span><input type="date" value={date} onChange={updateFilter(setDate)} /></label>
       </div>
 
-      {error && <div className="alert">{error}</div>}
-      {successMessage && <div className="alert success-alert">{successMessage}</div>}
-
-      {loading ? (
-        <div className="empty">Memuat data...</div>
-      ) : filtered.length === 0 ? (
-        <div className="empty">Belum ada pengaduan yang masuk.</div>
+      {loading ? <LoadingSkeleton rows={7} /> : results.length === 0 ? (
+        <EmptyState icon={<FileSearch size={30} />} title={filtered.length ? "Pengaduan tidak ditemukan" : "Belum ada pengaduan"} description={filtered.length ? "Coba ubah pencarian atau filter yang digunakan." : "Pengaduan dari siswa akan muncul di sini."} action={filtered.length ? <Button variant="secondary" type="button" onClick={() => { setSearch(""); setCategory("all"); setPriority("all"); setDate(""); setFilter("all"); }}>Atur ulang filter</Button> : undefined} />
       ) : (
-        <div className="table-card admin-table complaints-table">
-          <div className="table-slim head complaints-row-head">
-            <span>Pelapor</span>
-            <span>Kategori</span>
-            <span>Pesan</span>
-            <span>Bukti</span>
-            <span>Status</span>
-            <span>Tanggal</span>
-            <span>Aksi</span>
-          </div>
-          {filtered.map((complaint) => (
-            <ComplaintRow
-              key={complaint.id}
-              complaint={complaint}
-              resolveMediaUrl={resolveMediaUrl}
-              statusOptions={statusOptions}
-              statusColor={statusColor}
-              handleStatus={handleStatus}
-              handleDelete={handleDelete}
-              handleDownloadEvidence={handleDownloadEvidence}
-              onOpenDetail={setSelectedComplaint}
-            />
-          ))}
-        </div>
+        <>
+          <div className="data-table complaints-table"><div className="data-row data-head complaints-row"><span>Pelapor</span><span>Pengaduan</span><span>Lampiran</span><span>Status dan waktu</span><span>Aksi</span></div>{paged.map((complaint) => <ComplaintRow key={complaint.id} complaint={complaint} statusOptions={statusOptions} statusColor={statusColor} handleStatus={handleStatus} onDelete={setDeleteTarget} onOpenDetail={setSelectedComplaint} />)}</div>
+          <footer className="pagination"><span>{Math.min(page * PAGE_SIZE, results.length)} dari {results.length} pengaduan</span><div><Button variant="secondary" type="button" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>Sebelumnya</Button><span>Halaman {page} dari {totalPages}</span><Button variant="secondary" type="button" disabled={page === totalPages} onClick={() => setPage((value) => value + 1)}>Berikutnya</Button></div></footer>
+        </>
       )}
+      <ConfirmationDialog open={Boolean(deleteTarget)} title="Hapus pengaduan ini?" description="Pengaduan dan akses terhadap buktinya akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan." confirmLabel="Hapus pengaduan" onClose={() => setDeleteTarget(null)} onConfirm={async () => { const target = deleteTarget; setDeleteTarget(null); await handleDelete(target.id); }} />
     </section>
   );
 };

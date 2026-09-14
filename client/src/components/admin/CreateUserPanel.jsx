@@ -1,3 +1,5 @@
+import { Button, InlineMessage } from "../shared/ui";
+
 const CreateUserPanel = ({
   createUserForm,
   setCreateUserForm,
@@ -5,25 +7,22 @@ const CreateUserPanel = ({
   creatingUser,
   error,
   successMessage,
+  onClose,
 }) => {
   const hasSelectedRequest = Boolean(createUserForm.requestId);
 
   return (
     <div
-      className={
-        hasSelectedRequest
-          ? "card submit-card account-form-card"
-          : "card submit-card account-form-card is-idle"
-      }
+      className="create-user-panel"
     >
-      <h3>Buat Akun dari Pengajuan</h3>
+      <h3>Setujui dan buat akun</h3>
       <p className="muted small">
         {hasSelectedRequest
           ? "Data pengajuan sudah disiapkan. Lengkapi password sebelum membuat akun."
           : "Pilih tombol Siapkan Akun pada salah satu pengajuan untuk mengisi data."}
       </p>
-      {error && <div className="alert">{error}</div>}
-      {successMessage && <div className="alert success-alert">{successMessage}</div>}
+      {error && <InlineMessage>{error}</InlineMessage>}
+      {successMessage && <InlineMessage type="success">{successMessage}</InlineMessage>}
       {!hasSelectedRequest ? (
         <div className="account-form-empty">
           Pilih tombol Siapkan Akun pada salah satu pengajuan untuk mengisi data.
@@ -37,7 +36,7 @@ const CreateUserPanel = ({
           }}
         >
           <label>
-            Nama Lengkap
+                Nama lengkap
             <input
               type="text"
               value={createUserForm.name}
@@ -59,9 +58,9 @@ const CreateUserPanel = ({
             />
           </label>
           <label>
-            Password
-            <input
-              type="text"
+                Password awal
+                <input
+                  type="password"
               value={createUserForm.password}
               onChange={(event) =>
                 setCreateUserForm({ ...createUserForm, password: event.target.value })
@@ -83,7 +82,7 @@ const CreateUserPanel = ({
           </label>
           {createUserForm.role === "student" && (
             <label>
-              Nama Kelas
+              Kelas
               <input
                 type="text"
                 value={createUserForm.className}
@@ -95,8 +94,16 @@ const CreateUserPanel = ({
             </label>
           )}
           <div className="form-actions">
-            <button
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={onClose}
+            >
+              Batal
+            </Button>
+            <Button
               type="submit"
+              loading={creatingUser}
               disabled={
                 creatingUser ||
                 !createUserForm.name.trim() ||
@@ -105,8 +112,8 @@ const CreateUserPanel = ({
                 (createUserForm.role === "student" && !createUserForm.className.trim())
               }
             >
-              {creatingUser ? "Membuat..." : "Buat Akun"}
-            </button>
+              {creatingUser ? "Membuat akun" : "Setujui dan buat akun"}
+            </Button>
           </div>
         </form>
       )}

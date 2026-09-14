@@ -19,6 +19,7 @@ const formatFileSize = (bytes) => {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
+const quickActions = ["Perundungan", "Masalah akademik", "Fasilitas sekolah", "Kekerasan", "Lainnya"];
 const AssistantComplaintCard = ({
   error,
   chatMessages,
@@ -67,6 +68,13 @@ const AssistantComplaintCard = ({
       </div>
 
       {error && <div className="alert">{error}</div>}
+      {chatMessages.length <= 1 && !chatFinalData && (
+        <div className="quick-actions" aria-label="Pilihan topik pengaduan">
+          {quickActions.map((topic) => (
+            <button key={topic} type="button" onClick={() => setChatInput(`Saya ingin melaporkan ${topic.toLowerCase()}. `)}>{topic}</button>
+          ))}
+        </div>
+      )}
       <div className="chat-panel">
         <div className="chat-panel-head">
           <div className="chat-panel-identity">
@@ -131,10 +139,11 @@ const AssistantComplaintCard = ({
         />
 
         <textarea
+          aria-label="Pesan untuk asisten pengaduan"
           rows="3"
           value={chatInput}
           onChange={(event) => setChatInput(event.target.value)}
-          placeholder="Tulis jawaban Anda di sini... (Enter untuk mengirim)"
+          placeholder="Ceritakan kejadian atau jawab pertanyaan asisten…"
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {
               event.preventDefault();
@@ -150,6 +159,7 @@ const AssistantComplaintCard = ({
             onClick={() => fileInputRef.current?.click()}
             disabled={chatLoading || chatAttachUploading}
             title="Lampirkan foto bukti"
+            aria-label="Lampirkan foto bukti"
           >
             <Paperclip size={15} strokeWidth={2.5} />
           </button>

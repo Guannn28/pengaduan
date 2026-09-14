@@ -62,12 +62,12 @@ const FinalReportSummary = ({
     <div className="final-summary">
       <div className="final-summary-head">
         <div>
-          <h4>Ringkasan Laporan</h4>
-          <p className="muted small">Periksa kembali data berikut sebelum mengirim laporan.</p>
+          <h4>Ringkasan Pengaduan</h4>
+          <p className="muted small">Periksa kembali data berikut sebelum mengirim pengaduan.</p>
         </div>
         <span className="summary-badge">
           <CheckCircle size={13} strokeWidth={2.5} />
-          Siap Dikirim
+          Siap dikirim
         </span>
       </div>
       <div className="final-summary-grid">
@@ -107,11 +107,15 @@ const FinalReportSummary = ({
           <span>Harapan Pelapor</span>
           <strong>{renderFinalValue(chatFinalData.harapan)}</strong>
         </div>
+        <div className="final-summary-wide">
+          <span>Status identitas</span>
+          <strong>{String(chatFinalData.modeIdentitas || chatFinalData.identitas || "").toLowerCase().includes("anonim") ? "Anonim — identitas tetap tersimpan secara aman di sistem" : "Identitas ditampilkan kepada petugas berwenang"}</strong>
+        </div>
       </div>
       <div className="chat-evidence-upload">
         <label>
           <Paperclip size={14} strokeWidth={2} />
-          Lampiran Bukti (Opsional)
+          Lampiran bukti (opsional)
         </label>
 
         {chatAttachment ? (
@@ -177,7 +181,7 @@ const FinalReportSummary = ({
               {chatAttachUploading ? "Mengunggah Bukti..." : "Mengirim Laporan..."}
             </>
           ) : (
-            "Kirim Laporan"
+            "Kirim pengaduan"
           )}
         </button>
       </div>

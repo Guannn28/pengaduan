@@ -1,3 +1,7 @@
+import { FileText, Home, UserPlus, Users } from "lucide-react";
+
+const navIcons = { dashboard: Home, "account-requests": UserPlus, "student-accounts": Users, complaints: FileText };
+
 const AdminSidebar = ({
   user,
   adminView,
@@ -31,16 +35,20 @@ const AdminSidebar = ({
       </div>
     </div>
     <div className="rail-tabs">
-      {navItems.map((item) => (
-        <button
-          key={item.value}
-          type="button"
-          className={adminView === item.value ? "rail-tab active" : "rail-tab"}
-          onClick={() => setAdminView(item.value)}
-        >
-          <span>{item.label}</span>
-        </button>
-      ))}
+      {navItems.map((item) => {
+        const Icon = navIcons[item.value] || FileText;
+        return (
+          <button
+            key={item.value}
+            type="button"
+            className={adminView === item.value ? "rail-tab active" : "rail-tab"}
+            onClick={() => setAdminView(item.value)}
+          >
+            <Icon size={18} />
+            <span>{item.label}</span>
+          </button>
+        );
+      })}
     </div>
   </aside>
 );

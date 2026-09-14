@@ -1,4 +1,8 @@
-require("dotenv").config();
+const path = require("path");
+
+// Always load the backend environment file, regardless of the directory used
+// to start Node (for example `npm run dev` from the repository root).
+require("dotenv").config({ path: path.resolve(__dirname, "..", ".env") });
 
 const clientOrigins = String(
   process.env.CLIENT_ORIGIN || "http://localhost:5173"
@@ -7,10 +11,34 @@ const clientOrigins = String(
   .map((value) => value.trim())
   .filter(Boolean);
 
+const addLoopbackAlias = (value) => {
+  try {
+    const url = new URL(value);
+    if (url.hostname === "localhost") {
+      url.hostname = "127.0.0.1";
+      return url.origin;
+    }
+    if (url.hostname === "127.0.0.1") {
+      url.hostname = "localhost";
+      return url.origin;
+    }
+  } catch {
+    // Wildcard origins are handled by the matcher below.
+  }
+  return "";
+};
+
+const allowedClientOrigins = [
+  ...new Set([
+    ...clientOrigins,
+    ...clientOrigins.map(addLoopbackAlias).filter(Boolean),
+  ]),
+];
+
 const escapeRegex = (value) =>
   value.replace(/[|\\{}()[\]^$+?.]/g, "\\$&");
 
-const clientOriginMatchers = clientOrigins.map((value) => {
+const clientOriginMatchers = allowedClientOrigins.map((value) => {
   if (!value.includes("*")) {
     return value;
   }
@@ -39,7 +67,7 @@ module.exports = {
   HOST: process.env.HOST || "0.0.0.0",
   PORT: Number(process.env.PORT) || 4000,
   CLIENT_ORIGIN: clientOrigins[0] || "http://localhost:5173",
-  CLIENT_ORIGINS: clientOrigins,
+  CLIENT_ORIGINS: allowedClientOrigins,
   isAllowedOrigin,
   MONGODB_URI: process.env.MONGODB_URI || "mongodb://127.0.0.1:27017",
   MONGODB_DB_NAME: process.env.MONGODB_DB_NAME || "complaints_db",

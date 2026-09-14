@@ -1,13 +1,22 @@
-const DEVELOPMENT_API_URL = "http://localhost:4000";
-
 const normalizeApiBaseUrl = (value) =>
   String(value || "")
     .trim()
     .replace(/\/+$/, "");
 
 export const API_BASE_URL =
-  normalizeApiBaseUrl(import.meta.env.VITE_API_URL) ||
-  (import.meta.env.DEV ? DEVELOPMENT_API_URL : "");
+  normalizeApiBaseUrl(import.meta.env.VITE_API_URL);
+
+const request = async (url, options) => {
+  try {
+    return await fetch(url, options);
+  } catch (error) {
+    const networkError = new Error(
+      "Server belum terhubung. Pastikan aplikasi dijalankan dengan npm run dev, lalu coba lagi."
+    );
+    networkError.cause = error;
+    throw networkError;
+  }
+};
 
 const getHeaders = (token, isFormData = false) => {
   const headers = {};
@@ -55,6 +64,27 @@ const parseJsonSafely = async (res) => {
   }
 };
 
+const readApiJson = async (res, fallbackMessage) => {
+  const data = await parseJsonSafely(res);
+
+  if (!res.ok) {
+    const serverUnavailable = [502, 503, 504].includes(res.status);
+    throw new Error(
+      data.error ||
+        data.message ||
+        (serverUnavailable
+          ? "Server aplikasi belum aktif. Jalankan npm run dev dari folder utama, lalu coba lagi."
+          : fallbackMessage)
+    );
+  }
+
+  if (!Object.keys(data).length) {
+    throw new Error("Respons server tidak valid. Muat ulang halaman lalu coba lagi.");
+  }
+
+  return data;
+};
+
 const requestChatbotJson = async (url, options, timeoutMs, fallbackMessage) => {
   const res = await fetchWithTimeout(url, options, timeoutMs);
   const data = await parseJsonSafely(res);
@@ -68,32 +98,27 @@ const requestChatbotJson = async (url, options, timeoutMs, fallbackMessage) => {
 
 export const api = {
   getMe: async (token) => {
-    const res = await fetch(`${API_BASE_URL}/api/me`, {
+    const res = await request(`${API_BASE_URL}/api/me`, {
       headers: getHeaders(token),
     });
-    if (!res.ok) throw new Error("Gagal mengambil data user");
-    return res.json();
+    return readApiJson(res, "Gagal mengambil data pengguna.");
   },
 
   login: async (username, password) => {
-    const res = await fetch(`${API_BASE_URL}/api/login`, {
+    const res = await request(`${API_BASE_URL}/api/login`, {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify({ username, password }),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Login gagal");
-    return data;
+    return readApiJson(res, "Login gagal. Periksa kembali username dan password.");
   },
 
   register: async (formData) => {
-    const res = await fetch(`${API_BASE_URL}/api/register`, {
+    const res = await request(`${API_BASE_URL}/api/register`, {
       method: "POST",
       body: formData,
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Pendaftaran gagal");
-    return data;
+    return readApiJson(res, "Pendaftaran gagal.");
   },
 
   getComplaints: async (token) => {

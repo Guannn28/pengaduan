@@ -5,6 +5,11 @@ export const adminNavItems = [
     description: "Ringkasan kondisi laporan dan akun",
   },
   {
+    value: "complaints",
+    label: "Pengaduan",
+    description: "Penanganan pengaduan masuk",
+  },
+  {
     value: "account-requests",
     label: "Pengajuan Akun",
     description: "Verifikasi permohonan akun siswa",
@@ -13,10 +18,5 @@ export const adminNavItems = [
     value: "student-accounts",
     label: "Data Akun Siswa",
     description: "Akun siswa yang sudah tercatat",
-  },
-  {
-    value: "complaints",
-    label: "Pengaduan",
-    description: "Tindak lanjut laporan masuk",
   },
 ];

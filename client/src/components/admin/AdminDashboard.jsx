@@ -37,20 +37,20 @@ const AdminDashboard = ({
   <>
     <section className="admin-stat-grid">
       <AdminStatCard
-        label="Total Pengaduan"
+        label="Total pengaduan"
         value={complaintStats.total}
         helper="Semua laporan yang masuk"
         icon={<BarChart2 size={20} strokeWidth={1.5} />}
       />
       <AdminStatCard
-        label="Menunggu Ditinjau"
+        label="Menunggu ditinjau"
         value={complaintStats.submitted}
         helper="Perlu tindakan segera"
         icon={<Clock size={20} strokeWidth={1.5} />}
         tone="warning"
       />
       <AdminStatCard
-        label="Sedang Diproses"
+        label="Sedang diproses"
         value={complaintStats.inProgress}
         helper="Sedang ditindaklanjuti"
         icon={<RefreshCw size={20} strokeWidth={1.5} />}
@@ -64,14 +64,14 @@ const AdminDashboard = ({
         tone="success"
       />
       <AdminStatCard
-        label="Pengajuan Akun"
+        label="Pengajuan akun"
         value={pendingAccountRequests.length}
         helper="Menunggu persetujuan"
         icon={<UserPlus size={20} strokeWidth={1.5} />}
         tone="account"
       />
       <AdminStatCard
-        label="Akun Siswa Aktif"
+        label="Akun siswa aktif"
         value={studentAccounts.length}
         helper="Siswa yang dapat masuk sistem"
         icon={<Users size={20} strokeWidth={1.5} />}
@@ -86,7 +86,7 @@ const AdminDashboard = ({
             <p className="muted small">Lima laporan terakhir yang masuk ke sistem.</p>
           </div>
           <button className="ghost" type="button" onClick={() => setAdminView("complaints")}>
-            Lihat Semua
+            Lihat semua
           </button>
         </div>
 
@@ -117,7 +117,7 @@ const AdminDashboard = ({
                     type="button"
                     onClick={() => setSelectedComplaint(complaint)}
                   >
-                    Detail
+                    Tinjau
                   </button>
                 </div>
               </div>
@@ -136,7 +136,7 @@ const AdminDashboard = ({
             type="button"
             onClick={() => setAdminView("account-requests")}
           >
-            Lihat Semua
+            Lihat semua
           </button>
         </div>
 

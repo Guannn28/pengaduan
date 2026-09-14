@@ -62,36 +62,30 @@ const findUsersByIds = (ids = []) => {
 const ensureDefaultAdmin = async () => {
   const desiredUsername = env.ADMIN_USERNAME;
   const desiredPassword = env.ADMIN_PASSWORD;
+  const existingAdmin = await findAdmin();
+
+  if (existingAdmin) {
+    return;
+  }
+
   if (!desiredPassword) {
-    throw new Error("ADMIN_PASSWORD wajib diset di environment.");
+    throw new Error(
+      "ADMIN_PASSWORD wajib diset di environment saat akun admin belum ada."
+    );
   }
 
   const now = new Date();
   const salt = generateSalt();
   const hash = hashPassword(desiredPassword, salt);
-  const existingAdmin = await findAdmin();
 
-  if (!existingAdmin) {
-    await createUser({
-      name: "Admin Sekolah",
-      username: desiredUsername,
-      passwordHash: hash,
-      salt,
-      role: "admin",
-      createdAt: now,
-      updatedAt: now,
-    });
-    return;
-  }
-
-  await updateUserById(existingAdmin._id, {
-    $set: {
-      name: "Admin Sekolah",
-      username: desiredUsername,
-      passwordHash: hash,
-      salt,
-      updatedAt: now,
-    },
+  await createUser({
+    name: "Admin Sekolah",
+    username: desiredUsername,
+    passwordHash: hash,
+    salt,
+    role: "admin",
+    createdAt: now,
+    updatedAt: now,
   });
 };
 

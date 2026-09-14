@@ -50,6 +50,7 @@ function App() {
   const { showToast } = useToast();
   const [complaints, setComplaints] = useState([]);
   const [accountRequests, setAccountRequests] = useState([]);
+  const [accountRequestsLoading, setAccountRequestsLoading] = useState(false);
   const [studentAccounts, setStudentAccounts] = useState([]);
   const [studentAccountsLoading, setStudentAccountsLoading] = useState(false);
   const [chatMessages, setChatMessages] = useState(createInitialChatMessages);
@@ -86,6 +87,7 @@ function App() {
     requestId: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [authSubmitting, setAuthSubmitting] = useState(false);
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(
     localStorage.getItem("complain_token") || ""
@@ -142,14 +144,18 @@ function App() {
   const fetchAccountRequests = useCallback(async (tkn = token) => {
     if (!tkn) {
       setAccountRequests([]);
+      setAccountRequestsLoading(false);
       return;
     }
 
     try {
+      setAccountRequestsLoading(true);
       const data = await api.getAccountRequests(tkn);
       setAccountRequests(data);
     } catch {
       showToast("Gagal memuat permohonan akun.", "error");
+    } finally {
+      setAccountRequestsLoading(false);
     }
   }, [token, showToast]);
 
@@ -411,8 +417,10 @@ function App() {
   };
 
   const authAction = async (mode) => {
+    if (authSubmitting) return;
     setError("");
     setSuccessMessage("");
+    setAuthSubmitting(true);
     try {
       let data;
       if (mode === "register") {
@@ -437,7 +445,6 @@ function App() {
           contactPhone: "",
           studentCard: null,
         });
-        setAuthMode("login");
         return;
       } else {
         data = await api.login(authForm.username, authForm.password);
@@ -462,7 +469,9 @@ function App() {
         hydrateChatbotDraft(data.token);
       }
     } catch (err) {
-      setError(err.message || "Login/daftar gagal.");
+      setError(err.message || (mode === "login" ? "Login gagal. Periksa kembali data Anda." : "Pengajuan akun gagal dikirim."));
+    } finally {
+      setAuthSubmitting(false);
     }
   };
 
@@ -525,11 +534,6 @@ function App() {
   }, [token, showToast]);
 
   const handleDeleteStudentAccount = async (id) => {
-    const confirmed = window.confirm(
-      "Hapus akun siswa ini? Siswa tidak akan bisa login lagi."
-    );
-    if (!confirmed) return;
-
     try {
       const data = await api.deleteStudentAccount(token, id);
       setStudentAccounts((prev) => prev.filter((account) => account.id !== id));
@@ -545,6 +549,7 @@ function App() {
     localStorage.removeItem("complain_token");
     setComplaints([]);
     setAccountRequests([]);
+    setAccountRequestsLoading(false);
     setStudentAccounts([]);
     setStudentAccountsLoading(false);
     setSuccessMessage("");
@@ -580,6 +585,7 @@ function App() {
         setShowPassword={setShowPassword}
         error={error}
         successMessage={successMessage}
+        isSubmitting={authSubmitting}
         onSubmit={() => {
           authAction(authMode);
         }}
@@ -607,6 +613,7 @@ function App() {
         handleDelete={handleDelete}
         handleDownloadEvidence={handleDownloadEvidence}
         accountRequests={accountRequests}
+        accountRequestsLoading={accountRequestsLoading}
         fetchAccountRequests={fetchAccountRequests}
         studentAccounts={studentAccounts}
         studentAccountsLoading={studentAccountsLoading}

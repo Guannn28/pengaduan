@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+import { Check, Circle, Download, X } from "lucide-react";
 import {
   complaintDetailLabels,
   formatDate,
@@ -5,6 +7,7 @@ import {
   getUrgencyBadgeClass,
   getUrgencyValue,
 } from "../../utils/formatters";
+import { IconButton } from "./ui";
 
 const getParsedFieldValue = (parsedFields, key) =>
   parsedFields.find((field) => field.key === key)?.value || "Tidak ada";
@@ -58,7 +61,7 @@ const ComplaintEvidence = ({
           type="button"
           onClick={() => handleDownloadEvidence(complaint)}
         >
-          Download
+          <Download size={16} /> Unduh
         </button>
       )}
     </div>
@@ -193,6 +196,22 @@ const ComplaintDetailModal = ({
   handleDownloadEvidence,
   onClose,
 }) => {
+  const contentRef = useRef(null);
+
+  useEffect(() => {
+    if (!selectedComplaintDetail) return undefined;
+    const previousFocus = document.activeElement;
+    contentRef.current?.focus();
+    const handleEscape = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+      previousFocus?.focus?.();
+    };
+  }, [selectedComplaintDetail, onClose]);
+
   if (!selectedComplaintDetail) return null;
 
   const isAdmin = role === "admin";
@@ -200,6 +219,13 @@ const ComplaintDetailModal = ({
     ? selectedComplaintDetail.parsedFields
     : [];
   const urgency = getUrgencyValue(selectedComplaintDetail);
+  const timelineSteps = [
+    { key: "submitted", label: "Dikirim" },
+    { key: "reviewed", label: "Ditinjau" },
+    { key: "in_progress", label: "Diproses" },
+    { key: "resolved", label: "Selesai" },
+  ];
+  const currentStep = selectedComplaintDetail.status === "submitted" ? 0 : selectedComplaintDetail.status === "in_progress" ? 2 : selectedComplaintDetail.status === "resolved" ? 3 : 0;
 
   return (
     <div
@@ -214,7 +240,7 @@ const ComplaintDetailModal = ({
         onClick={onClose}
         aria-label="Tutup detail pengaduan"
       />
-      <div className="complaint-detail-content">
+      <div className="complaint-detail-content" ref={contentRef} tabIndex="-1">
         <div className="card">
           <div className="card-head">
             <div>
@@ -227,9 +253,7 @@ const ComplaintDetailModal = ({
                   : "Isi lengkap pengaduan Anda ditampilkan di bawah ini."}
               </p>
             </div>
-            <button type="button" className="ghost" onClick={onClose}>
-              Tutup
-            </button>
+            <IconButton label="Tutup detail pengaduan" onClick={onClose}><X size={20} /></IconButton>
           </div>
 
           {isAdmin ? (
@@ -247,6 +271,18 @@ const ComplaintDetailModal = ({
               urgency={urgency}
             />
           )}
+
+          <div className="status-timeline" aria-label="Perkembangan pengaduan">
+            {timelineSteps.map((step, index) => {
+              const complete = index <= currentStep && selectedComplaintDetail.status !== "rejected";
+              return (
+                <div className={complete ? "timeline-step complete" : "timeline-step"} key={step.key}>
+                  <span>{complete ? <Check size={14} /> : <Circle size={12} />}</span>
+                  <strong>{step.label}</strong>
+                </div>
+              );
+            })}
+          </div>
 
           {isAdmin ? (
             <AdminMessage complaint={selectedComplaintDetail} parsedFields={parsedFields} />
