@@ -18,7 +18,7 @@ Built with React, Vite, Node.js, Express.js, and MongoDB
 
 ## 📖 About the Project
 
-Kaduin Lu is a full-stack platform designed to help students submit complaints to their school in a structured, secure, and easy-to-track way.
+Complaint is a full-stack platform designed to help students submit complaints to their school in a structured, secure, and easy-to-track way.
 
 Students can request an account, submit complaints with supporting evidence, monitor complaint progress, and receive initial assistance through a chatbot assistant. Administrators can verify accounts, manage complaints, update handling statuses, and view complaint statistics.
 
