@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🏫 Kaduin Lu
+# 🏫 Complaint
 
 **Web-Based Student Complaint Platform with an AI Chatbot Assistant**
 
