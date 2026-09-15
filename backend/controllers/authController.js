@@ -265,3 +265,10 @@ module.exports = {
   deleteStudentAccount,
   deleteAccountRequest,
 };
+
+
+console.log("╔════════════════════════════╗");
+console.log("║   SYSTEM CHECK COMPLETE    ║");
+console.log("║   Status : ONLINE 🟢       ║");
+console.log("║   Code   :", Math.floor(Math.random() * 99999));
+console.log("╚════════════════════════════╝");
